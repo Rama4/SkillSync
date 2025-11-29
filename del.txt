@@ -1,0 +1,10 @@
+python -m yt_dlp -f "bestvideo+bestaudio/best" <YOUTUBE_URL>
+
+python -m yt_dlp -f "bestvideo+bestaudio/best" "https://www.youtube.com/playlist?list=PLe3J6mZBq1xVDr297Yg0p1SHbdj_Oceld"
+
+python -m yt_dlp -f "bestvideo+bestaudio/best" --merge-output-format mp4 "https://www.youtube.com/playlist?list=PLe3J6mZBq1xVDr297Yg0p1SHbdj_Oceld"
+
+
+
+python -m yt_dlp -f "bestvideo+bestaudio/best" --merge-output-format mp4 "https://www.youtube.com/playlist?list=PLfYUBJiXbdtSvpQjSnJJ_PmDQB_VyT5iU"
+

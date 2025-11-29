@@ -1,0 +1,134 @@
+{
+  "id": "convolutional-neural-networks",
+  "title": "Convolutional Neural Networks (CNNs)",
+  "topic": "deep-learning",
+  "order": 3,
+  "duration": "25 min",
+  "difficulty": "intermediate",
+  "objectives": [
+    "Understand why CNNs are essential for image processing",
+    "Learn the key operations: convolution, pooling, and padding",
+    "Explore famous CNN architectures and their innovations",
+    "Build intuition for feature hierarchies in visual data"
+  ],
+  "sections": [
+    {
+      "id": "why-cnns",
+      "type": "content",
+      "title": "Why Do We Need CNNs?",
+      "content": "Standard neural networks (fully connected) have a critical problem with images: they don't understand **spatial structure**.\n\n### The Problem with Fully Connected Networks\n\nConsider a modest 224×224 RGB image:\n- Total pixels: 224 × 224 × 3 = **150,528 inputs**\n- If first hidden layer has 1000 neurons: **150 million weights** just for layer 1!\n\nThis causes:\n1. **Computational explosion** - Too many parameters\n2. **Overfitting** - More parameters than training examples\n3. **Lost spatial information** - Flattening destroys pixel relationships\n\n### CNNs: A Better Approach\n\nCNNs solve these problems through:\n\n| Principle | Benefit |\n|-----------|--------|\n| **Local connectivity** | Neurons only connect to nearby pixels, not all pixels |\n| **Parameter sharing** | Same filter applied across entire image |\n| **Translation invariance** | Recognize objects regardless of position |\n| **Hierarchical features** | Build complex features from simple ones |\n\nA CNN might have only **thousands** of parameters instead of millions, while actually performing better!"
+    },
+    {
+      "id": "convolution-operation",
+      "type": "content",
+      "title": "The Convolution Operation",
+      "content": "The **convolution** is the core operation that gives CNNs their name. It's a way to scan an image with a small filter to detect patterns.\n\n### How Convolution Works\n\n1. Take a small matrix called a **kernel** or **filter** (e.g., 3×3)\n2. Slide it across the image, one position at a time\n3. At each position, compute element-wise multiplication and sum\n4. The result is a **feature map** (or activation map)\n\n### Visual Example\n\n```\nInput Image (5×5)          Filter (3×3)         Slide & Compute\n┌─┬─┬─┬─┬─┐               ┌──┬──┬──┐\n│1│2│3│0│1│               │ 1│ 0│-1│           Position (0,0):\n├─┼─┼─┼─┼─┤               ├──┼──┼──┤           1×1 + 2×0 + 3×(-1)\n│0│1│2│3│2│     ✱         │ 1│ 0│-1│     →     + 0×1 + 1×0 + 2×(-1)\n├─┼─┼─┼─┼─┤               ├──┼──┼──┤           + 1×1 + 0×0 + 1×(-1)\n│1│0│1│0│1│               │ 1│ 0│-1│           = 1 + 0 - 3 + 0 + 0 - 2\n├─┼─┼─┼─┼─┤               └──┴──┴──┘             + 1 + 0 - 1 = -4\n│2│1│0│2│0│\n├─┼─┼─┼─┼─┤\n│0│1│2│1│1│\n└─┴─┴─┴─┴─┘\n```\n\n### Code Example\n\n```python\nimport numpy as np\nfrom scipy.signal import convolve2d\n\nimage = np.array([[1,2,3,0,1],\n                  [0,1,2,3,2],\n                  [1,0,1,0,1],\n                  [2,1,0,2,0],\n                  [0,1,2,1,1]])\n\n# Vertical edge detector\nfilter = np.array([[ 1, 0, -1],\n                   [ 1, 0, -1],\n                   [ 1, 0, -1]])\n\nfeature_map = convolve2d(image, filter, mode='valid')\n```\n\n### What Do Filters Detect?\n\n- **Edge detectors**: Find boundaries between regions\n- **Blur filters**: Average neighboring pixels\n- **Sharpening filters**: Enhance differences\n- **In CNNs**: Filters are LEARNED from data!"
+    },
+    {
+      "id": "padding-stride",
+      "type": "content",
+      "title": "Padding and Stride",
+      "content": "Two important parameters control how convolution behaves:\n\n### Stride\n\n**Stride** = how many pixels to move the filter each step.\n\n- **Stride 1**: Move 1 pixel at a time (most common)\n- **Stride 2**: Move 2 pixels (downsamples by 2×)\n\n```\nStride 1 on 5×5 → 3×3 output\nStride 2 on 5×5 → 2×2 output\n```\n\n### Padding\n\n**Padding** = adding extra pixels around the image border.\n\n**Why pad?**\n1. Preserve spatial dimensions (output same size as input)\n2. Give edge pixels fair treatment (they're otherwise used less)\n\n**Types:**\n- **Valid (no padding)**: Output shrinks\n- **Same (zero padding)**: Output = Input size\n- **Full padding**: Output larger than input\n\n```\n5×5 input, 3×3 filter:\n- Valid padding: 5-3+1 = 3×3 output\n- Same padding (pad=1): 5×5 output\n```\n\n### Output Size Formula\n\n```\nOutput = (Input - Filter + 2×Padding) / Stride + 1\n```\n\n**Example**: 224×224 input, 3×3 filter, stride 1, padding 1:\n```\nOutput = (224 - 3 + 2×1) / 1 + 1 = 224\n```"
+    },
+    {
+      "id": "pooling",
+      "type": "content",
+      "title": "Pooling Layers",
+      "content": "**Pooling** reduces the spatial dimensions of feature maps, making the network more efficient and robust.\n\n### Max Pooling\n\nTakes the **maximum value** in each window:\n\n```\nInput (4×4)              Max Pool 2×2            Output (2×2)\n┌──┬──┬──┬──┐           stride=2                ┌──┬──┐\n│ 1│ 3│ 2│ 1│                                   │ 4│ 6│\n├──┼──┼──┼──┤              →                    ├──┼──┤\n│ 4│ 2│ 6│ 4│                                   │ 5│ 8│\n├──┼──┼──┼──┤                                   └──┴──┘\n│ 5│ 1│ 3│ 2│\n├──┼──┼──┼──┤\n│ 2│ 3│ 8│ 1│\n└──┴──┴──┴──┘\n```\n\n### Average Pooling\n\nTakes the **average value** in each window. Less common than max pooling.\n\n### Benefits of Pooling\n\n| Benefit | Explanation |\n|---------|-------------|\n| **Dimensionality reduction** | 2×2 pooling cuts dimensions by 4× |\n| **Translation invariance** | Small shifts don't change max value |\n| **Computational efficiency** | Fewer values to process |\n| **Reduces overfitting** | Fewer parameters, more generalization |\n\n### Global Average Pooling\n\nModern architectures often use **Global Average Pooling** before the final layer:\n- Takes entire feature map → single value per channel\n- Eliminates need for fully connected layers\n- Reduces parameters dramatically"
+    },
+    {
+      "id": "cnn-architecture",
+      "type": "content",
+      "title": "Typical CNN Architecture",
+      "content": "A complete CNN follows a pattern of **alternating convolution and pooling**, ending with **fully connected layers**.\n\n### Standard Pattern\n\n```\nInput Image\n    ↓\n[CONV → ReLU] → [CONV → ReLU] → POOL\n    ↓\n[CONV → ReLU] → [CONV → ReLU] → POOL\n    ↓\n[CONV → ReLU] → [CONV → ReLU] → POOL\n    ↓\nFLATTEN\n    ↓\nFully Connected → ReLU → Dropout\n    ↓\nFully Connected → Softmax\n    ↓\nOutput (class probabilities)\n```\n\n### What Each Part Learns\n\n**Early layers** (close to input):\n- Simple patterns: edges, colors, textures\n- Small receptive field\n\n**Middle layers**:\n- Combinations: corners, shapes, parts\n- Medium receptive field\n\n**Deep layers** (close to output):\n- Complex concepts: faces, objects, scenes\n- Large receptive field\n\n### Example: VGG-16 Architecture\n\n```python\nmodel = Sequential([\n    # Block 1\n    Conv2D(64, 3, activation='relu', padding='same'),\n    Conv2D(64, 3, activation='relu', padding='same'),\n    MaxPool2D(2, 2),\n    \n    # Block 2\n    Conv2D(128, 3, activation='relu', padding='same'),\n    Conv2D(128, 3, activation='relu', padding='same'),\n    MaxPool2D(2, 2),\n    \n    # ... more blocks ...\n    \n    # Classifier\n    Flatten(),\n    Dense(4096, activation='relu'),\n    Dense(4096, activation='relu'),\n    Dense(1000, activation='softmax')  # ImageNet classes\n])\n```"
+    },
+    {
+      "id": "famous-architectures",
+      "type": "content",
+      "title": "Famous CNN Architectures",
+      "content": "### LeNet-5 (1998) 🏛️\n**Pioneer** - First successful CNN for digit recognition\n- 2 conv layers, 2 pooling, 3 FC layers\n- ~60K parameters\n- Used tanh activation\n\n### AlexNet (2012) 🏆\n**Game changer** - Won ImageNet, started deep learning revolution\n- 5 conv layers, 3 pooling, 3 FC layers\n- ~60M parameters\n- Introduced ReLU, dropout, data augmentation\n\n### VGGNet (2014) 📐\n**Simplicity** - Showed depth matters with uniform 3×3 filters\n- VGG-16: 16 layers, 138M parameters\n- VGG-19: 19 layers\n- Deep but simple architecture\n\n### GoogLeNet/Inception (2014) 🔀\n**Efficiency** - Parallel convolutions at multiple scales\n- 22 layers but only 5M parameters!\n- \"Inception modules\" with 1×1, 3×3, 5×5 parallel paths\n- 1×1 convolutions for dimensionality reduction\n\n### ResNet (2015) ⬆️\n**Breakthrough** - Skip connections enable very deep networks\n- Up to 152 layers (ResNet-152)\n- Residual connections: output = F(x) + x\n- Solved vanishing gradient in very deep networks\n\n### EfficientNet (2019) ⚖️\n**State-of-art** - Optimal scaling of depth, width, resolution\n- Family of models (B0-B7)\n- Compound scaling with fixed ratios\n- Best accuracy/efficiency trade-off"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "type": "multiple-choice",
+      "question": "Why do CNNs use parameter sharing across the entire image?",
+      "options": [
+        "To make training faster",
+        "Because the same pattern can appear anywhere in the image",
+        "To increase the number of parameters",
+        "To avoid using activation functions"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Parameter sharing means the same filter (edge detector, etc.) is applied across all positions. This makes sense because a vertical edge looks the same whether it's in the top-left or bottom-right of an image."
+    },
+    {
+      "id": "q2",
+      "type": "multiple-choice",
+      "question": "What is the output size of a 32×32 input with a 5×5 filter, stride 1, and no padding?",
+      "options": [
+        "32×32",
+        "30×30",
+        "28×28",
+        "27×27"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Using the formula: Output = (Input - Filter + 2×Padding) / Stride + 1 = (32 - 5 + 0) / 1 + 1 = 28"
+    },
+    {
+      "id": "q3",
+      "type": "multiple-choice",
+      "question": "Which pooling operation is most commonly used in CNNs?",
+      "options": [
+        "Min pooling",
+        "Average pooling",
+        "Max pooling",
+        "Sum pooling"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Max pooling is most common because it captures the strongest activation (most important feature) in each region, providing some translation invariance."
+    },
+    {
+      "id": "q4",
+      "type": "multiple-choice",
+      "question": "What architectural innovation allowed ResNet to train networks with 100+ layers?",
+      "options": [
+        "Dropout",
+        "Batch normalization",
+        "Skip/residual connections",
+        "Inception modules"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Skip connections (residual connections) add the input directly to the output of a block: y = F(x) + x. This allows gradients to flow directly through the network, solving vanishing gradient issues in very deep networks."
+    }
+  ],
+  "keyTakeaways": [
+    "CNNs use local connectivity and parameter sharing to efficiently process images",
+    "Convolution: slide filter across image, compute weighted sums → feature maps",
+    "Pooling reduces dimensions and adds translation invariance",
+    "Early layers detect simple features; deep layers detect complex concepts",
+    "Modern architectures: ResNet (skip connections), EfficientNet (optimal scaling)"
+  ],
+  "previousLesson": "backpropagation-explained",
+  "nextLesson": null,
+  "resources": [
+    {
+      "title": "Stanford CS231n: CNNs for Visual Recognition",
+      "url": "https://cs231n.github.io/convolutional-networks/",
+      "type": "course"
+    },
+    {
+      "title": "CNN Explainer - Interactive Visualization",
+      "url": "https://poloclub.github.io/cnn-explainer/",
+      "type": "interactive"
+    },
+    {
+      "title": "A Guide to Convolution Arithmetic",
+      "url": "https://arxiv.org/abs/1603.07285",
+      "type": "paper"
+    }
+  ],
+  "lastUpdated": "2025-11-27"
+}
+

@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "8080:80"
+    container_name: simple-docker-app
+    restart: unless-stopped
+    
+  # Optional: Add a simple database service
+  # Uncomment the lines below if you want to add a database
+  # db:
+  #   image: postgres:13-alpine
+  #   environment:
+  #     POSTGRES_DB: myapp
+  #     POSTGRES_USER: user
+  #     POSTGRES_PASSWORD: password
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+
+# volumes:
+#   postgres_data:

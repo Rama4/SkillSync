@@ -1,0 +1,129 @@
+{
+  "id": "backpropagation-explained",
+  "title": "Backpropagation Explained",
+  "topic": "deep-learning",
+  "order": 2,
+  "duration": "20 min",
+  "difficulty": "intermediate",
+  "objectives": [
+    "Understand the intuition behind backpropagation",
+    "Learn how gradients flow backward through the network",
+    "Master the chain rule and its application in neural networks",
+    "Implement a simple backpropagation example"
+  ],
+  "sections": [
+    {
+      "id": "what-is-backprop",
+      "type": "content",
+      "title": "What is Backpropagation?",
+      "content": "**Backpropagation** (short for \"backward propagation of errors\") is the algorithm that makes neural network training possible. It's how we figure out *which weights caused the error* and *by how much* we should adjust them.\n\n### The Core Problem\n\nImagine a neural network with thousands of weights. When it makes a wrong prediction, we need to answer:\n- Which weights contributed to the error?\n- How much should each weight change?\n- In which direction (increase or decrease)?\n\nBackpropagation answers all these questions efficiently using **calculus** (specifically, the chain rule).\n\n### The Key Insight\n\nBackpropagation works because neural networks are just a series of mathematical operations chained together. If we know how the final error depends on each operation, we can trace backward to find how it depends on each weight."
+    },
+    {
+      "id": "chain-rule",
+      "type": "content",
+      "title": "The Chain Rule: The Heart of Backpropagation",
+      "content": "The **chain rule** from calculus is the mathematical foundation of backpropagation. It tells us how to compute the derivative of a composite function.\n\n### Simple Chain Rule\n\nIf `y = f(g(x))`, then:\n```\ndy/dx = (dy/dg) × (dg/dx)\n```\n\n### Example\n\nLet's say `y = (x + 1)²`\n- Let `g = x + 1` (inner function)\n- Then `y = g²` (outer function)\n\nUsing chain rule:\n```\ndy/dx = (dy/dg) × (dg/dx)\n      = 2g × 1\n      = 2(x + 1)\n```\n\n### In Neural Networks\n\nA neural network is just nested functions:\n```\nLoss = L(f₃(f₂(f₁(x))))\n```\n\nWhere each `f` is a layer. The chain rule lets us compute how the loss changes with respect to any weight in any layer:\n\n```\n∂Loss/∂w₁ = (∂Loss/∂f₃) × (∂f₃/∂f₂) × (∂f₂/∂f₁) × (∂f₁/∂w₁)\n```\n\nThis is why it's called **backpropagation**—we propagate derivatives backward from the loss!"
+    },
+    {
+      "id": "gradient-flow",
+      "type": "content",
+      "title": "Gradient Flow: A Visual Understanding",
+      "content": "Let's visualize how gradients flow through a simple network.\n\n### Forward Pass (Computing Output)\n\n```\nInput x=2 → [×w₁=3] → 6 → [+b=1] → 7 → [σ] → 0.999 → [Loss] → 0.001\n                                            ↓\n                                       Predicted: 0.999\n                                       Actual: 1.0\n```\n\n### Backward Pass (Computing Gradients)\n\nNow we trace backward, asking \"how does the loss change if I tweak each value?\"\n\n```\n∂L/∂ŷ    ← How does loss change with prediction?\n   ↓\n∂L/∂z    ← How does loss change with pre-activation? (chain rule!)\n   ↓\n∂L/∂b    ← How does loss change with bias?\n∂L/∂w₁   ← How does loss change with weight?\n```\n\n### The Gradient Tells Us:\n\n| Gradient Sign | Meaning | Action |\n|---------------|---------|--------|\n| Positive (+) | Increasing this weight increases loss | Decrease weight |\n| Negative (-) | Increasing this weight decreases loss | Increase weight |\n| Near Zero | This weight doesn't affect loss much | Small/no change |"
+    },
+    {
+      "id": "backprop-algorithm",
+      "type": "content",
+      "title": "The Backpropagation Algorithm",
+      "content": "Here's the complete backpropagation algorithm:\n\n### Step 1: Forward Pass\n```python\n# Layer 1\nz1 = np.dot(X, W1) + b1\na1 = relu(z1)\n\n# Layer 2 (output)\nz2 = np.dot(a1, W2) + b2\na2 = softmax(z2)  # predictions\n\n# Compute loss\nloss = cross_entropy(y_true, a2)\n```\n\n### Step 2: Backward Pass\n```python\nm = X.shape[0]  # batch size\n\n# Output layer gradients\ndz2 = a2 - y_true  # derivative of cross-entropy + softmax\ndW2 = (1/m) * np.dot(a1.T, dz2)\ndb2 = (1/m) * np.sum(dz2, axis=0)\n\n# Hidden layer gradients (chain rule!)\nda1 = np.dot(dz2, W2.T)\ndz1 = da1 * relu_derivative(z1)\ndW1 = (1/m) * np.dot(X.T, dz1)\ndb1 = (1/m) * np.sum(dz1, axis=0)\n```\n\n### Step 3: Update Weights\n```python\nlearning_rate = 0.01\n\nW2 -= learning_rate * dW2\nb2 -= learning_rate * db2\nW1 -= learning_rate * dW1\nb1 -= learning_rate * db1\n```\n\n### Key Insight\nNotice how we go backward: first compute gradients for layer 2, then use those to compute gradients for layer 1. Each layer's gradient depends on the layers after it!"
+    },
+    {
+      "id": "worked-example",
+      "type": "content",
+      "title": "Worked Example: Simple Network",
+      "content": "Let's work through a concrete example with actual numbers.\n\n### Setup\n- **Input**: x = 0.5\n- **Target**: y = 1\n- **Weight**: w = 0.8\n- **Bias**: b = 0.2\n- **Activation**: Sigmoid σ(z) = 1/(1+e⁻ᶻ)\n- **Loss**: MSE = (y - ŷ)²\n\n### Forward Pass\n```\nz = wx + b = 0.8 × 0.5 + 0.2 = 0.6\nŷ = σ(0.6) = 1/(1+e⁻⁰·⁶) = 0.6457\nLoss = (1 - 0.6457)² = 0.1256\n```\n\n### Backward Pass\n\n**Step 1: ∂Loss/∂ŷ**\n```\n∂Loss/∂ŷ = -2(y - ŷ) = -2(1 - 0.6457) = -0.7086\n```\n\n**Step 2: ∂ŷ/∂z (sigmoid derivative)**\n```\n∂ŷ/∂z = σ(z)(1 - σ(z)) = 0.6457 × 0.3543 = 0.2288\n```\n\n**Step 3: ∂z/∂w**\n```\n∂z/∂w = x = 0.5\n```\n\n**Chain Rule: ∂Loss/∂w**\n```\n∂Loss/∂w = (∂Loss/∂ŷ) × (∂ŷ/∂z) × (∂z/∂w)\n         = -0.7086 × 0.2288 × 0.5\n         = -0.0811\n```\n\n### Update Weight\n```\nw_new = w - lr × ∂Loss/∂w\n      = 0.8 - 0.1 × (-0.0811)\n      = 0.8081\n```\n\nThe weight **increased** because the gradient was negative (increasing w decreases loss)!"
+    },
+    {
+      "id": "common-issues",
+      "type": "content",
+      "title": "Common Backpropagation Challenges",
+      "content": "### 1. Vanishing Gradients\n\n**Problem**: In deep networks, gradients can become extremely small as they propagate backward.\n\n**Cause**: Sigmoid/tanh squash values to small ranges; multiplying many small gradients → tiny gradients.\n\n**Solutions**:\n- Use ReLU activation (gradient is 1 for positive values)\n- Use batch normalization\n- Use skip connections (ResNets)\n\n### 2. Exploding Gradients\n\n**Problem**: Gradients become extremely large, causing unstable training.\n\n**Cause**: Weights initialized too large; gradients multiply and explode.\n\n**Solutions**:\n- Gradient clipping (cap gradient values)\n- Proper weight initialization (Xavier, He)\n- Use batch normalization\n\n### 3. Dead Neurons (ReLU)\n\n**Problem**: ReLU neurons can \"die\"—always output 0, gradient is always 0, never recover.\n\n**Cause**: Large negative bias or weights push activation into negative territory permanently.\n\n**Solutions**:\n- Leaky ReLU (small slope for negative values)\n- Careful learning rate selection\n- Proper weight initialization"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "type": "multiple-choice",
+      "question": "What mathematical concept is the foundation of backpropagation?",
+      "options": [
+        "Linear algebra",
+        "The chain rule from calculus",
+        "Probability theory",
+        "Boolean algebra"
+      ],
+      "correctAnswer": 1,
+      "explanation": "The chain rule allows us to compute how the loss changes with respect to any weight by decomposing the derivative through the network layers."
+    },
+    {
+      "id": "q2",
+      "type": "multiple-choice",
+      "question": "If a weight's gradient is negative, what should happen to that weight during the update step?",
+      "options": [
+        "It should decrease",
+        "It should increase",
+        "It should stay the same",
+        "It should be set to zero"
+      ],
+      "correctAnswer": 1,
+      "explanation": "A negative gradient means increasing this weight will decrease the loss. Since new_weight = old_weight - lr × gradient, subtracting a negative value increases the weight."
+    },
+    {
+      "id": "q3",
+      "type": "multiple-choice",
+      "question": "Which activation function helps prevent the vanishing gradient problem?",
+      "options": [
+        "Sigmoid",
+        "Tanh",
+        "ReLU",
+        "Softmax"
+      ],
+      "correctAnswer": 2,
+      "explanation": "ReLU has a gradient of 1 for positive values, which doesn't shrink during backpropagation. Sigmoid and tanh have gradients that can be very small."
+    },
+    {
+      "id": "q4",
+      "type": "multiple-choice",
+      "question": "In backpropagation, which direction do gradients flow?",
+      "options": [
+        "From input layer to output layer",
+        "From output layer to input layer",
+        "Both directions simultaneously",
+        "Randomly between layers"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Gradients flow backward from the output (where we compute the loss) to the input, hence 'backpropagation'."
+    }
+  ],
+  "keyTakeaways": [
+    "Backpropagation computes how each weight affects the loss using the chain rule",
+    "Gradients flow backward from the loss through each layer",
+    "Positive gradients → decrease weight; Negative gradients → increase weight",
+    "Common challenges: vanishing/exploding gradients, dead neurons",
+    "Solutions include ReLU activation, proper initialization, and gradient clipping"
+  ],
+  "previousLesson": "introduction-to-neural-networks",
+  "nextLesson": "convolutional-neural-networks",
+  "resources": [
+    {
+      "title": "Calculus on Computational Graphs: Backpropagation",
+      "url": "https://colah.github.io/posts/2015-08-Backprop/",
+      "type": "article"
+    },
+    {
+      "title": "3Blue1Brown: Backpropagation",
+      "url": "https://www.youtube.com/watch?v=Ilg3gGewQ5U",
+      "type": "video"
+    }
+  ],
+  "lastUpdated": "2025-11-27"
+}
+

@@ -1,0 +1,34 @@
+{
+  "id": "deep-learning",
+  "title": "Deep Learning",
+  "description": "Master the fundamentals and advanced concepts of deep learning, from neural networks to cutting-edge architectures.",
+  "icon": "🧠",
+  "color": "#8B5CF6",
+  "lessons": [
+    {
+      "id": "introduction-to-neural-networks",
+      "order": 1,
+      "title": "Introduction to Neural Networks",
+      "duration": "15 min",
+      "difficulty": "beginner"
+    },
+    {
+      "id": "backpropagation-explained",
+      "order": 2,
+      "title": "Backpropagation Explained",
+      "duration": "20 min",
+      "difficulty": "intermediate"
+    },
+    {
+      "id": "convolutional-neural-networks",
+      "order": 3,
+      "title": "Convolutional Neural Networks (CNNs)",
+      "duration": "25 min",
+      "difficulty": "intermediate"
+    }
+  ],
+  "prerequisites": [],
+  "tags": ["machine-learning", "ai", "neural-networks", "python"],
+  "lastUpdated": "2025-11-27"
+}
+

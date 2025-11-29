@@ -1,0 +1,108 @@
+{
+  "id": "introduction-to-neural-networks",
+  "title": "Introduction to Neural Networks",
+  "topic": "deep-learning",
+  "order": 1,
+  "duration": "15 min",
+  "difficulty": "beginner",
+  "objectives": [
+    "Understand what neural networks are and why they matter",
+    "Learn the basic components: neurons, weights, biases, and activation functions",
+    "Build intuition for how neural networks learn from data"
+  ],
+  "sections": [
+    {
+      "id": "what-is-neural-network",
+      "type": "content",
+      "title": "What is a Neural Network?",
+      "content": "A **neural network** is a computational model inspired by the biological neural networks in our brains. Just as our brains consist of billions of interconnected neurons that process and transmit information, artificial neural networks consist of interconnected nodes (artificial neurons) organized in layers.\n\nNeural networks are the foundation of modern deep learning and power many of the AI applications we use daily—from voice assistants and image recognition to recommendation systems and autonomous vehicles.\n\n### Why Neural Networks?\n\nTraditional programming requires us to explicitly define rules for every scenario. Neural networks take a different approach: they **learn patterns from data**. Given enough examples, a neural network can discover complex relationships that would be nearly impossible to program manually."
+    },
+    {
+      "id": "anatomy-of-neuron",
+      "type": "content",
+      "title": "Anatomy of an Artificial Neuron",
+      "content": "An artificial neuron (also called a **perceptron**) is the basic building block of neural networks. It performs three main operations:\n\n1. **Receives inputs**: Each input has an associated **weight** that determines its importance\n2. **Computes weighted sum**: Multiplies each input by its weight and adds them together, plus a **bias** term\n3. **Applies activation function**: Transforms the sum into an output signal\n\n### The Mathematical Formula\n\n```\noutput = activation(Σ(weight_i × input_i) + bias)\n```\n\nOr more simply:\n```\noutput = activation(w₁x₁ + w₂x₂ + ... + wₙxₙ + b)\n```\n\n### Key Components\n\n| Component | Purpose |\n|-----------|----------|\n| **Weights (w)** | Control how much each input influences the output |\n| **Bias (b)** | Allows the neuron to shift its activation threshold |\n| **Activation Function** | Introduces non-linearity, enabling complex pattern learning |"
+    },
+    {
+      "id": "activation-functions",
+      "type": "content",
+      "title": "Common Activation Functions",
+      "content": "Activation functions are crucial—without them, a neural network would just be a linear transformation, unable to learn complex patterns.\n\n### 1. Sigmoid\n```python\ndef sigmoid(x):\n    return 1 / (1 + np.exp(-x))\n```\n- **Output range**: 0 to 1\n- **Use case**: Binary classification, output layer for probabilities\n- **Drawback**: Vanishing gradient problem for deep networks\n\n### 2. ReLU (Rectified Linear Unit)\n```python\ndef relu(x):\n    return np.maximum(0, x)\n```\n- **Output range**: 0 to ∞\n- **Use case**: Most common choice for hidden layers\n- **Advantage**: Computationally efficient, reduces vanishing gradient\n\n### 3. Tanh (Hyperbolic Tangent)\n```python\ndef tanh(x):\n    return np.tanh(x)\n```\n- **Output range**: -1 to 1\n- **Use case**: When outputs need to be centered around zero\n\n### 4. Softmax\n```python\ndef softmax(x):\n    exp_x = np.exp(x - np.max(x))\n    return exp_x / exp_x.sum()\n```\n- **Output**: Probability distribution\n- **Use case**: Multi-class classification output layer"
+    },
+    {
+      "id": "network-architecture",
+      "type": "content",
+      "title": "Network Architecture: Layers",
+      "content": "Neural networks organize neurons into **layers**:\n\n### 1. Input Layer\n- Receives the raw data (features)\n- Number of neurons = number of input features\n- No computation happens here—just data entry\n\n### 2. Hidden Layers\n- Where the \"magic\" happens—pattern extraction and learning\n- Can have multiple hidden layers (hence \"deep\" learning)\n- More layers = ability to learn more complex patterns\n- Each neuron connects to all neurons in the previous layer (fully connected)\n\n### 3. Output Layer\n- Produces the final prediction\n- Structure depends on the task:\n  - **Binary classification**: 1 neuron with sigmoid\n  - **Multi-class classification**: N neurons with softmax (N = number of classes)\n  - **Regression**: 1 neuron with linear activation\n\n### Example: Image Classification\n\n```\nInput Layer (784 neurons)     → 28×28 pixel image flattened\n    ↓\nHidden Layer 1 (128 neurons)  → Extract low-level features (edges, textures)\n    ↓\nHidden Layer 2 (64 neurons)   → Extract higher-level features (shapes, parts)\n    ↓\nOutput Layer (10 neurons)     → Probability for each digit (0-9)\n```"
+    },
+    {
+      "id": "how-learning-works",
+      "type": "content",
+      "title": "How Neural Networks Learn",
+      "content": "Learning in neural networks is the process of finding the optimal weights and biases that minimize prediction errors. This happens through:\n\n### 1. Forward Propagation\nData flows through the network from input to output, producing a prediction.\n\n### 2. Loss Calculation\nWe measure how wrong the prediction is using a **loss function**:\n- **Mean Squared Error (MSE)**: For regression\n- **Cross-Entropy Loss**: For classification\n\n### 3. Backpropagation\nWe calculate how each weight contributed to the error and compute **gradients** (more on this in the next lesson!).\n\n### 4. Weight Update\nUsing **gradient descent**, we adjust weights to reduce the loss:\n```\nnew_weight = old_weight - learning_rate × gradient\n```\n\n### The Learning Loop\n```\nRepeat for many iterations (epochs):\n    1. Forward pass → get predictions\n    2. Compute loss → measure error\n    3. Backward pass → compute gradients\n    4. Update weights → reduce error\n```\n\nThis process continues until the network achieves satisfactory performance!"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q1",
+      "type": "multiple-choice",
+      "question": "What are the three main operations performed by an artificial neuron?",
+      "options": [
+        "Input, Process, Output",
+        "Receive inputs, compute weighted sum, apply activation",
+        "Read, Write, Execute",
+        "Forward, Backward, Update"
+      ],
+      "correctAnswer": 1,
+      "explanation": "A neuron receives inputs (with weights), computes their weighted sum plus a bias, and then applies an activation function to produce output."
+    },
+    {
+      "id": "q2",
+      "type": "multiple-choice",
+      "question": "Which activation function is most commonly used in hidden layers of modern neural networks?",
+      "options": [
+        "Sigmoid",
+        "Tanh",
+        "ReLU",
+        "Softmax"
+      ],
+      "correctAnswer": 2,
+      "explanation": "ReLU (Rectified Linear Unit) is the most popular choice for hidden layers because it's computationally efficient and helps avoid the vanishing gradient problem."
+    },
+    {
+      "id": "q3",
+      "type": "multiple-choice",
+      "question": "What is the purpose of the bias term in a neuron?",
+      "options": [
+        "To add randomness to the output",
+        "To allow the neuron to shift its activation threshold",
+        "To normalize the inputs",
+        "To speed up training"
+      ],
+      "correctAnswer": 1,
+      "explanation": "The bias allows the neuron to shift when it activates, even when all inputs are zero. It gives the model more flexibility to fit the data."
+    }
+  ],
+  "keyTakeaways": [
+    "Neural networks are computational models that learn patterns from data",
+    "The basic unit is a neuron: weighted inputs → sum → activation → output",
+    "Networks have input, hidden, and output layers",
+    "Activation functions add non-linearity, enabling complex learning",
+    "Learning happens through forward propagation, loss calculation, and weight updates"
+  ],
+  "nextLesson": "backpropagation-explained",
+  "resources": [
+    {
+      "title": "3Blue1Brown: Neural Networks",
+      "url": "https://www.youtube.com/playlist?list=PLZHQObOWTQDNU6R1_67000Dx_ZCJB-3pi",
+      "type": "video"
+    },
+    {
+      "title": "Neural Networks and Deep Learning (Free Book)",
+      "url": "http://neuralnetworksanddeeplearning.com/",
+      "type": "book"
+    }
+  ],
+  "lastUpdated": "2025-11-27"
+}
+
