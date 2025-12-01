@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { BookOpen, Zap, Menu, X } from 'lucide-react';
+import { BookOpen, Zap, Menu, X, Plus } from 'lucide-react';
 import { useState } from 'react';
 
 export default function Header() {
@@ -30,6 +30,10 @@ export default function Header() {
               <BookOpen className="w-4 h-4" />
               Topics
             </Link>
+            <Link href="/register-topic" className="text-gray-300 hover:text-white transition-colors flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              Register Topic
+            </Link>
             <Link href="/" className="text-gray-300 hover:text-white transition-colors">
               Progress
             </Link>
@@ -55,6 +59,14 @@ export default function Header() {
               >
                 <BookOpen className="w-4 h-4" />
                 Topics
+              </Link>
+              <Link 
+                href="/register-topic" 
+                className="text-gray-300 hover:text-white transition-colors flex items-center gap-2 py-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Plus className="w-4 h-4" />
+                Register Topic
               </Link>
               <Link 
                 href="/" 

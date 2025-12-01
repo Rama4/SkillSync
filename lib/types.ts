@@ -40,11 +40,13 @@ export interface Lesson {
 
 export interface LessonSection {
   id: string;
-  type: 'content' | 'code' | 'exercise' | 'video';
+  type: 'content' | 'code' | 'exercise' | 'video' | 'markdown' | 'file';
   title: string;
   content: string;
   codeLanguage?: string;
   videoUrl?: string;
+  filePath?: string; // Path to media file relative to topic folder
+  fileType?: 'video' | 'markdown' | 'other'; // Type of file for rendering
 }
 
 export interface QuizQuestion {
@@ -69,5 +71,21 @@ export interface UserProgress {
   currentLesson: string | null;
   quizScores: Record<string, number>;
   lastAccessed: string;
+}
+
+// Media file reference for topic registration
+export interface MediaFile {
+  path: string; // Source path relative to data directory
+  name: string; // Display name
+  type: 'video' | 'markdown' | 'other';
+  size?: number;
+}
+
+// Topic registration request
+export interface TopicRegistrationRequest {
+  title: string;
+  description: string;
+  tags: string[];
+  mediaFiles: MediaFile[]; // Ordered list of media files
 }
 
