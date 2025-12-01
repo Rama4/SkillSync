@@ -1,79 +1,168 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# SkillSync Mobile App
 
-# Getting Started
+A React Native mobile app for offline-first learning with flashcard-style content delivery.
 
->**Note**: Make sure you have completed the [React Native - Environment Setup](https://reactnative.dev/docs/environment-setup) instructions till "Creating a new application" step, before proceeding.
+## Features
 
-## Step 1: Start the Metro Server
+✅ **Offline-First Architecture**
+- SQLite database for local storage
+- Reads content from local Documents folder
+- Works completely offline with local files
 
-First, you will need to start **Metro**, the JavaScript _bundler_ that ships _with_ React Native.
+✅ **Learning Content**
+- Flashcard-style lesson sections
+- Markdown rendering with syntax highlighting
+- Progress tracking through lessons
 
-To start Metro, run the following command from the _root_ of your React Native project:
+✅ **Modern UI**
+- Dark theme optimized for learning
+- Intuitive navigation between topics and lessons
+- Progress indicators and section navigation
 
+## Tech Stack
+
+- **Framework**: React Native CLI (no Expo)
+- **Language**: TypeScript
+- **Database**: SQLite (react-native-sqlite-storage)
+- **Markdown**: react-native-markdown-display
+- **Navigation**: React Navigation v7
+- **Target**: Android 10+ (SDK 29)
+
+## Project Structure
+
+```
+src/
+├── components/          # Reusable UI components
+├── screens/            # App screens (Home, Topic, Lesson, Settings)
+├── services/           # Database and sync services
+├── types/              # TypeScript type definitions
+└── navigation/         # Navigation configuration
+```
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- React Native CLI
+- Android Studio & SDK
+- Android device/emulator with Android 10+
+
+### Installation
+
+1. Install dependencies:
 ```bash
-# using npm
+npm install
+```
+
+2. Start Metro bundler:
+```bash
 npm start
-
-# OR using Yarn
-yarn start
 ```
 
-## Step 2: Start your Application
-
-Let Metro Bundler run in its _own_ terminal. Open a _new_ terminal from the _root_ of your React Native project. Run the following command to start your _Android_ or _iOS_ app:
-
-### For Android
-
+3. Run on Android:
 ```bash
-# using npm
 npm run android
-
-# OR using Yarn
-yarn android
 ```
 
-### For iOS
+### First Time Setup
+
+1. **Prepare Content**: Place your learning content in your phone's Download folder:
+   ```
+   Download/SkillSync/data/
+   ├── topics.json (optional - lists available topics)
+   └── deep-learning/
+       ├── topic.json
+       └── lessons/
+           ├── lesson1.json
+           ├── lesson2.json
+           └── ...
+   ```
+
+2. **Load Content**: 
+   - Open the app
+   - Go to Settings
+   - Tap "Load All Content" to import from local files
+   - Navigate back to Home to see available topics
+
+## Configuration
+
+### Data Source
+
+The app reads content from your phone's local Download folder:
+- **Path**: `Download/SkillSync/data/`
+- **Topics**: Auto-discovered from folder names or `topics.json`
+- **Structure**: Each topic has its own folder with `topic.json` and `lessons/` subfolder
+
+### File Structure
+
+```
+Download/SkillSync/data/
+├── topics.json (optional)
+├── deep-learning/
+│   ├── topic.json
+│   └── lessons/
+│       ├── backpropagation-explained.json
+│       ├── introduction-to-neural-networks.json
+│       └── convolutional-neural-networks.json
+└── your-topic/
+    ├── topic.json
+    └── lessons/
+        └── your-lesson.json
+```
+
+## Usage
+
+### Learning Flow
+
+1. **Home Screen**: Browse available topics
+2. **Topic Screen**: View lessons in a topic
+3. **Lesson Screen**: Navigate through sections in flashcard style
+4. **Settings Screen**: Manage content sync and app data
+
+### Offline Mode
+
+- App works completely offline with local files
+- No internet required - reads from Documents folder
+- All content cached locally in SQLite database for fast access
+
+### Content Management
+
+- **Load All Content**: Import all topics and lessons from Documents folder
+- **Check for Updates**: Compare file timestamps vs database
+- **Clear All Data**: Remove all cached content from database (files remain)
+
+## Development
+
+### Adding New Content
+
+1. Create topic folder in `Download/SkillSync/data/your-topic/`
+2. Add `topic.json` with metadata
+3. Add lesson files in `lessons/` subfolder
+4. Use "Load All Content" in Settings to import new content
+
+### Building for Release
 
 ```bash
-# using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
+npm run build:apk
 ```
 
-If everything is set up _correctly_, you should see your new app running in your _Android Emulator_ or _iOS Simulator_ shortly provided you have set up your emulator/simulator correctly.
+## Troubleshooting
 
-This is one way to run your app — you can also run it directly from within Android Studio and Xcode respectively.
+### Common Issues
 
-## Step 3: Modifying your App
+1. **SQLite errors**: Ensure react-native-sqlite-storage is properly linked
+2. **File not found errors**: Verify files are in Download/SkillSync/data/ folder
+3. **Permission errors**: Ensure app has file system permissions
+4. **Markdown rendering**: Verify content format matches expected structure
 
-Now that you have successfully run the app, let's modify it.
+### Logs
 
-1. Open `App.tsx` in your text editor of choice and edit some lines.
-2. For **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Developer Menu** (<kbd>Ctrl</kbd> + <kbd>M</kbd> (on Window and Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (on macOS)) to see your changes!
+Check Metro logs and device logs for debugging:
+```bash
+npx react-native log-android
+```
 
-   For **iOS**: Hit <kbd>Cmd ⌘</kbd> + <kbd>R</kbd> in your iOS Simulator to reload the app and see your changes!
+## License
 
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [Introduction to React Native](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you can't get this to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+MIT License - see LICENSE file for details.

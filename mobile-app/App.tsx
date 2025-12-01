@@ -9,8 +9,10 @@ import {createNativeStackNavigator} from '@react-navigation/native-stack';
 
 // Import screens
 import HomeScreen from './src/screens/HomeScreen';
+import TopicScreen from './src/screens/TopicScreen';
+import LessonScreen from './src/screens/LessonScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
-import {RootStackParamList} from './src/screens/HomeScreen';
+import {RootStackParamList} from './src/types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -39,6 +41,20 @@ function App(): React.JSX.Element {
             options={{
               title: 'SkillSync',
             }}
+          />
+          <Stack.Screen
+            name="Topic"
+            component={TopicScreen}
+            options={({route}) => ({
+              title: route.params.topicTitle,
+            })}
+          />
+          <Stack.Screen
+            name="Lesson"
+            component={LessonScreen}
+            options={({route}) => ({
+              title: route.params.lessonTitle,
+            })}
           />
           <Stack.Screen
             name="Settings"
