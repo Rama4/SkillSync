@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { MediaFile, TopicMeta, LessonMeta, Lesson } from './types';
+import { MediaFile, TopicMeta, LessonMeta, Lesson, Note, NotesIndex } from './types';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 
@@ -330,5 +330,161 @@ export function updateTopicsIndex(topicMeta: TopicMeta): void {
   
   // Write back to file
   fs.writeFileSync(topicsIndexPath, JSON.stringify(topicsIndex, null, 2), 'utf-8');
+}
+
+/**
+ * Get notes directory path for a lesson
+ */
+export function getNotesDir(topicId: string, lessonId: string): string {
+  return path.join(DATA_DIR, topicId, 'lessons', lessonId, 'notes');
+}
+
+/**
+ * Get notes index file path
+ */
+export function getNotesIndexPath(topicId: string, lessonId: string): string {
+  return path.join(getNotesDir(topicId, lessonId), 'notes.json');
+}
+
+/**
+ * Get note file path
+ */
+export function getNotePath(topicId: string, lessonId: string, noteId: string): string {
+  return path.join(getNotesDir(topicId, lessonId), `${noteId}.json`);
+}
+
+/**
+ * Get audio file path for a note
+ */
+export function getAudioPath(topicId: string, lessonId: string, noteId: string): string {
+  return path.join(getNotesDir(topicId, lessonId), 'audio', `${noteId}.mp3`);
+}
+
+/**
+ * Get all notes for a lesson
+ */
+export function getNotes(topicId: string, lessonId: string): Note[] {
+  const notesDir = getNotesDir(topicId, lessonId);
+  const indexPath = getNotesIndexPath(topicId, lessonId);
+  
+  if (!fs.existsSync(notesDir) || !fs.existsSync(indexPath)) {
+    return [];
+  }
+  
+  try {
+    const index: NotesIndex = JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
+    const notes: Note[] = [];
+    
+    for (const noteId of index.notes) {
+      const notePath = getNotePath(topicId, lessonId, noteId);
+      if (fs.existsSync(notePath)) {
+        const note: Note = JSON.parse(fs.readFileSync(notePath, 'utf-8'));
+        notes.push(note);
+      }
+    }
+    
+    // Sort by createdAt (newest first)
+    notes.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    
+    return notes;
+  } catch (error) {
+    console.error(`Error reading notes for lesson ${lessonId}:`, error);
+    return [];
+  }
+}
+
+/**
+ * Save a note
+ */
+export function saveNote(note: Note, topicId: string): void {
+  const notesDir = getNotesDir(topicId, note.lessonId);
+  const audioDir = path.join(notesDir, 'audio');
+  const indexPath = getNotesIndexPath(topicId, note.lessonId);
+  
+  // Create directories if they don't exist
+  if (!fs.existsSync(notesDir)) {
+    fs.mkdirSync(notesDir, { recursive: true });
+  }
+  if (!fs.existsSync(audioDir)) {
+    fs.mkdirSync(audioDir, { recursive: true });
+  }
+  
+  // Read or create index
+  let index: NotesIndex;
+  if (fs.existsSync(indexPath)) {
+    index = JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
+  } else {
+    index = { notes: [], lastUpdated: new Date().toISOString() };
+  }
+  
+  // Add note ID to index if not present
+  if (!index.notes.includes(note.id)) {
+    index.notes.push(note.id);
+  }
+  
+  // Update timestamps
+  index.lastUpdated = new Date().toISOString();
+  note.updatedAt = new Date().toISOString();
+  if (!note.createdAt) {
+    note.createdAt = note.updatedAt;
+  }
+  
+  // Save note file
+  const notePath = getNotePath(topicId, note.lessonId, note.id);
+  fs.writeFileSync(notePath, JSON.stringify(note, null, 2), 'utf-8');
+  
+  // Save index
+  fs.writeFileSync(indexPath, JSON.stringify(index, null, 2), 'utf-8');
+}
+
+/**
+ * Delete a note
+ */
+export function deleteNote(noteId: string, lessonId: string, topicId: string): void {
+  const notesDir = getNotesDir(topicId, lessonId);
+  const indexPath = getNotesIndexPath(topicId, lessonId);
+  const notePath = getNotePath(topicId, lessonId, noteId);
+  
+  // Delete note file
+  if (fs.existsSync(notePath)) {
+    fs.unlinkSync(notePath);
+  }
+  
+  // Delete audio files if they exist (try different extensions)
+  const audioDir = path.join(notesDir, 'audio');
+  const possibleExtensions = ['webm', 'mp3', 'm4a', 'wav'];
+  
+  for (const ext of possibleExtensions) {
+    const audioPath = path.join(audioDir, `${noteId}.${ext}`);
+    if (fs.existsSync(audioPath)) {
+      fs.unlinkSync(audioPath);
+      break; // Only delete the first match
+    }
+  }
+  
+  // Update index
+  if (fs.existsSync(indexPath)) {
+    const index: NotesIndex = JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
+    index.notes = index.notes.filter(id => id !== noteId);
+    index.lastUpdated = new Date().toISOString();
+    fs.writeFileSync(indexPath, JSON.stringify(index, null, 2), 'utf-8');
+  }
+}
+
+/**
+ * Save audio file for a note
+ */
+export function saveAudioFile(audioBuffer: Buffer, noteId: string, lessonId: string, topicId: string, extension: string = 'webm'): string {
+  const audioDir = path.join(getNotesDir(topicId, lessonId), 'audio');
+  
+  // Create audio directory if it doesn't exist
+  if (!fs.existsSync(audioDir)) {
+    fs.mkdirSync(audioDir, { recursive: true });
+  }
+  
+  const audioPath = path.join(audioDir, `${noteId}.${extension}`);
+  fs.writeFileSync(audioPath, audioBuffer);
+
+  return `audio/${noteId}.${extension}`;
 }
 

@@ -1,9 +1,16 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { LessonMeta, LessonSection } from '@/lib/types';
-import { useProgressStore } from '@/lib/store';
-import { CheckCircle, Circle, Clock, BookOpen, ChevronLeft } from 'lucide-react';
+import Link from "next/link";
+import { LessonMeta, LessonSection } from "@/lib/types";
+import { useProgressStore } from "@/lib/store";
+import {
+  CheckCircle,
+  Circle,
+  Clock,
+  BookOpen,
+  ChevronLeft,
+} from "lucide-react";
+import NotesPanel from "./NotesPanel";
 
 interface LessonSidebarProps {
   topicId: string;
@@ -27,10 +34,10 @@ export default function LessonSidebar({
   const { isLessonComplete } = useProgressStore();
 
   return (
-    <aside className="w-80 bg-surface-1 border-r border-surface-3 h-screen overflow-y-auto fixed left-0 top-16 pt-6 pb-20 hidden lg:block">
+    <aside className="w-96 bg-surface-1 border-r border-surface-3 h-screen overflow-y-auto fixed left-0 top-16 pt-6 pb-20 hidden lg:block">
       {/* Back to topic */}
       <div className="px-4 mb-6">
-        <Link 
+        <Link
           href={`/topic/${topicId}`}
           className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
         >
@@ -51,8 +58,8 @@ export default function LessonSidebar({
               onClick={() => onSectionChange(index)}
               className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                 index === currentSectionIndex
-                  ? 'bg-primary-500/10 text-primary-400'
-                  : 'text-gray-400 hover:bg-surface-2 hover:text-white'
+                  ? "bg-primary-500/10 text-primary-400"
+                  : "text-gray-400 hover:bg-surface-2 hover:text-white"
               }`}
             >
               <span className="line-clamp-1">{section.title}</span>
@@ -62,14 +69,19 @@ export default function LessonSidebar({
             onClick={() => onSectionChange(sections.length)}
             className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2 ${
               currentSectionIndex === sections.length
-                ? 'bg-primary-500/10 text-primary-400'
-                : 'text-gray-400 hover:bg-surface-2 hover:text-white'
+                ? "bg-primary-500/10 text-primary-400"
+                : "text-gray-400 hover:bg-surface-2 hover:text-white"
             }`}
           >
             <BookOpen className="w-4 h-4" />
             Quiz
           </button>
         </div>
+      </div>
+
+      {/* Notes Panel */}
+      <div className="px-4 mb-8 border-t border-surface-3 pt-6">
+        <NotesPanel topicId={topicId} lessonId={currentLessonId} />
       </div>
 
       {/* All lessons */}
@@ -88,19 +100,25 @@ export default function LessonSidebar({
                 href={`/topic/${topicId}/lesson/${lesson.id}`}
                 className={`block px-3 py-2.5 rounded-lg text-sm transition-colors ${
                   isCurrent
-                    ? 'bg-primary-500/10 border border-primary-500/30'
-                    : 'hover:bg-surface-2'
+                    ? "bg-primary-500/10 border border-primary-500/30"
+                    : "hover:bg-surface-2"
                 }`}
               >
                 <div className="flex items-center gap-2">
                   {isComplete ? (
                     <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
                   ) : (
-                    <Circle className={`w-4 h-4 flex-shrink-0 ${isCurrent ? 'text-primary-400' : 'text-gray-600'}`} />
+                    <Circle
+                      className={`w-4 h-4 flex-shrink-0 ${
+                        isCurrent ? "text-primary-400" : "text-gray-600"
+                      }`}
+                    />
                   )}
-                  <span className={`flex-grow line-clamp-1 ${
-                    isCurrent ? 'text-white font-medium' : 'text-gray-400'
-                  }`}>
+                  <span
+                    className={`flex-grow line-clamp-1 ${
+                      isCurrent ? "text-white font-medium" : "text-gray-400"
+                    }`}
+                  >
                     {lesson.title}
                   </span>
                 </div>
@@ -116,4 +134,3 @@ export default function LessonSidebar({
     </aside>
   );
 }
-
