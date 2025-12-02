@@ -116,6 +116,23 @@ export interface DbSyncMeta {
   topicsIndexVersion: string;
 }
 
+// Note for lessons
+export interface Note {
+  id: string;
+  lessonId: string;
+  title: string;
+  markdown: string;
+  audioFile?: string; // Path relative to notes folder, e.g., "audio/note-1.mp3"
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Notes index file structure
+export interface NotesIndex {
+  notes: string[]; // Array of note IDs
+  lastUpdated: string;
+}
+
 // Navigation types
 export type RootStackParamList = {
   Home: undefined;

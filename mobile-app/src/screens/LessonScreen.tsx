@@ -13,6 +13,7 @@ import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import Markdown from 'react-native-markdown-display';
 import {RootStackParamList, Lesson, LessonSection} from '../types';
 import {databaseService} from '../services/database';
+import NotesPanel from '../components/NotesPanel';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Lesson'>;
 
@@ -23,6 +24,7 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [showNotes, setShowNotes] = useState(false);
 
   useEffect(() => {
     loadLessonData();
@@ -194,6 +196,23 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
   const isFirstSection = currentSectionIndex === 0;
   const isLastSection = currentSectionIndex === lesson.sections.length - 1;
 
+  if (showNotes) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.notesHeader}>
+          <TouchableOpacity 
+            style={styles.backToLessonButton}
+            onPress={() => setShowNotes(false)}
+          >
+            <Text style={styles.backToLessonButtonText}>← Back to Lesson</Text>
+          </TouchableOpacity>
+          <Text style={styles.notesTitle}>Notes</Text>
+        </View>
+        <NotesPanel topicId={topicId} lessonId={lessonId} />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       {/* Progress Header */}
@@ -204,6 +223,12 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
           </Text>
           <Text style={styles.sectionTitle}>{currentSection.title}</Text>
         </View>
+        <TouchableOpacity 
+          style={styles.notesButton}
+          onPress={() => setShowNotes(true)}
+        >
+          <Text style={styles.notesButtonText}>📝 Notes</Text>
+        </TouchableOpacity>
         <View style={styles.progressBar}>
           <View 
             style={[
@@ -280,6 +305,46 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#333333',
+  },
+  notesHeader: {
+    backgroundColor: '#1a1a1a',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333333',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  backToLessonButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#374151',
+  },
+  backToLessonButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  notesTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  notesButton: {
+    position: 'absolute',
+    right: 20,
+    top: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#8b5cf6',
+  },
+  notesButtonText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '500',
   },
   progressInfo: {
     marginBottom: 12,
