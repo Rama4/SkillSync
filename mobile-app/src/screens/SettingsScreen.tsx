@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
-import {RootStackParamList} from '../types';
+import {RootStackParamList} from '../../../lib/mobile_types';
 import {syncService, SyncStatus} from '../services/syncService';
 import {databaseService} from '../services/database';
 
@@ -153,7 +153,9 @@ const SettingsScreen: React.FC<Props> = ({navigation}) => {
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Source Path:</Text>
-            <Text style={styles.infoValue}>Download/SkillSync/data/ (or app external)</Text>
+            <Text style={styles.infoValue}>
+              Download/SkillSync/data/ (or app external)
+            </Text>
           </View>
 
           {syncStatus.isLoading && (

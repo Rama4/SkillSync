@@ -1,6 +1,6 @@
-import {TopicMeta, Lesson, TopicsIndex, TopicSummary} from '../types';
+import {TopicMeta, Lesson} from '../../../lib/types';
+import {TopicsIndex, TopicSummary} from '../../../lib/mobile_types';
 import {databaseService} from './database';
-import {devDataService} from './devDataService';
 import RNFS from 'react-native-fs';
 import {
   createNestedFolders,
@@ -8,13 +8,12 @@ import {
   fileExists,
   readJsonFile,
   getFoldersInDirectory,
-  isFileExists,
 } from '../utils/fsUtils';
 import {PermissionsAndroid, Platform} from 'react-native';
 
 // Configuration for local file system on Android
 // Primary: Download folder, Fallback: App's external directory
-const DOWNLOAD_DATA_PATH = `${RNFS.DownloadDirectoryPath}/SkillSync/data`;
+export const DOWNLOAD_DATA_PATH = `${RNFS.DownloadDirectoryPath}/SkillSync/data`;
 const EXTERNAL_DATA_PATH = `${RNFS.ExternalDirectoryPath}/SkillSync/data`;
 const TOPICS_FILE_NAME = 'topics.json';
 
@@ -51,9 +50,6 @@ class SyncService {
       console.log('Using Download folder:', DOWNLOAD_DATA_PATH);
       PUBLIC_DATA_PATH = DOWNLOAD_DATA_PATH;
       TOPICS_FILE_PATH = `${PUBLIC_DATA_PATH}/${TOPICS_FILE_NAME}`;
-
-      // 🔧 Development Mode: Ensure dev data exists
-      await devDataService.ensureDevDataExists(PUBLIC_DATA_PATH);
 
       return DOWNLOAD_DATA_PATH;
     } catch (error) {

@@ -1,12 +1,6 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-} from 'react-native';
-import {Note} from '../types';
+import {View, Text, TouchableOpacity, StyleSheet, Alert} from 'react-native';
+import {Note} from '../../../lib/types';
 import AudioPlayer from './AudioPlayer';
 
 interface NoteItemProps {
@@ -26,13 +20,16 @@ const NoteItem: React.FC<NoteItemProps> = ({
   onDelete,
   onDeleteAudio,
 }) => {
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return (
+      date.toLocaleDateString() +
+      ' ' +
+      date.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    );
   };
 
   const handleDeleteAudio = () => {
@@ -51,25 +48,31 @@ const NoteItem: React.FC<NoteItemProps> = ({
 
       {note.audioFile && (
         <View style={styles.audioSection}>
-          <AudioPlayer 
+          <AudioPlayer
             filePath={note.audioFile}
-            onError={(error) => {
+            onError={error => {
               console.error('Audio player error:', error);
               Alert.alert('Playback Error', error);
             }}
             style={styles.audioPlayer}
           />
-          <TouchableOpacity style={styles.deleteAudioButton} onPress={handleDeleteAudio}>
+          <TouchableOpacity
+            style={styles.deleteAudioButton}
+            onPress={handleDeleteAudio}>
             <Text style={styles.deleteAudioButtonText}>🗑 Delete Audio</Text>
           </TouchableOpacity>
         </View>
       )}
 
       <View style={styles.actions}>
-        <TouchableOpacity style={styles.editButton} onPress={() => onEdit(note)}>
+        <TouchableOpacity
+          style={styles.editButton}
+          onPress={() => onEdit(note)}>
           <Text style={styles.editButtonText}>Edit</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.deleteButton} onPress={() => onDelete(note.id)}>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => onDelete(note.id)}>
           <Text style={styles.deleteButtonText}>Delete</Text>
         </TouchableOpacity>
       </View>

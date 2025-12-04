@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import {Note} from '../types';
+import {Note} from '../../../lib/types';
 import {notesService} from '../services/notesService';
 import NoteItem from './NoteItem';
 import NoteEditor from './NoteEditor';
@@ -53,26 +53,22 @@ const NotesPanel: React.FC<NotesPanelProps> = ({topicId, lessonId}) => {
   };
 
   const handleDelete = async (noteId: string) => {
-    Alert.alert(
-      'Delete Note',
-      'Are you sure you want to delete this note?',
-      [
-        {text: 'Cancel', style: 'cancel'},
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await notesService.deleteNote(topicId, lessonId, noteId);
-              loadNotes();
-            } catch (error) {
-              console.error('Error deleting note:', error);
-              Alert.alert('Error', 'Failed to delete note');
-            }
-          },
+    Alert.alert('Delete Note', 'Are you sure you want to delete this note?', [
+      {text: 'Cancel', style: 'cancel'},
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await notesService.deleteNote(topicId, lessonId, noteId);
+            loadNotes();
+          } catch (error) {
+            console.error('Error deleting note:', error);
+            Alert.alert('Error', 'Failed to delete note');
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleDeleteAudio = async (noteId: string) => {
@@ -94,7 +90,7 @@ const NotesPanel: React.FC<NotesPanelProps> = ({topicId, lessonId}) => {
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -133,10 +129,14 @@ const NotesPanel: React.FC<NotesPanelProps> = ({topicId, lessonId}) => {
         </View>
       ) : notes.length === 0 ? (
         <View style={styles.centerContainer}>
-          <Text style={styles.emptyText}>No notes yet. Create your first note!</Text>
+          <Text style={styles.emptyText}>
+            No notes yet. Create your first note!
+          </Text>
         </View>
       ) : (
-        <ScrollView style={styles.notesList} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.notesList}
+          showsVerticalScrollIndicator={false}>
           {notes.map(note => (
             <NoteItem
               key={note.id}

@@ -11,9 +11,19 @@ import {
 } from 'react-native';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import Markdown from 'react-native-markdown-display';
-import {RootStackParamList, Lesson, LessonSection} from '../types';
+import Video from 'react-native-video';
+// import VideoPlayer from 'react-native-video-controls';
+import {RootStackParamList} from '../../../lib/mobile_types';
+import {LessonSection, Lesson} from '../../../lib/types';
 import {databaseService} from '../services/database';
 import NotesPanel from '../components/NotesPanel';
+import {fileExists} from '../utils/fsUtils';
+import {DOWNLOAD_DATA_PATH} from '../services/syncService';
+
+// CONFIGURATION
+// Replace this with your actual API URL (e.g., 'http://localhost:3000' or your production URL)
+// The web app used relative paths ('/api/media'), but RN needs an absolute URL.
+const API_BASE_URL = 'http://10.0.2.2:3000';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Lesson'>;
 
@@ -24,7 +34,22 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [videoUrl, setVideoUrl] = useState('');
+
+  const [dynamicContent, setDynamicContent] = useState<string>('');
+  const [isLoadingContent, setIsLoadingContent] = useState(false);
+
   const [showNotes, setShowNotes] = useState(false);
+
+  const currentSection: LessonSection | undefined =
+    lesson?.sections[currentSectionIndex];
+  const isFirstSection = currentSectionIndex === 0;
+  const isLastSection = currentSectionIndex === lesson?.sections.length - 1;
+
+  // Determine if this section is a video type
+  const isVideoSection =
+    currentSection?.type === 'video' ||
+    (currentSection?.fileType === 'video' && !!currentSection?.filePath);
 
   useEffect(() => {
     loadLessonData();
@@ -49,6 +74,67 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
     }
   };
 
+  // Effect to handle content fetching
+  useEffect(() => {
+    if (!lesson) return;
+
+    const section = lesson.sections[currentSectionIndex];
+
+    // Reset dynamic content when section changes
+    setDynamicContent('');
+
+    // Case 1: Content already exists
+    if (section.content) {
+      setDynamicContent(section.content);
+      return;
+    }
+
+    // Case 2: Markdown file needs fetching
+    if (
+      (section.type === 'markdown' || section.fileType === 'markdown') &&
+      section.filePath
+    ) {
+      setIsLoadingContent(true);
+      const mediaUrl = `${API_BASE_URL}/api/media/${topicId}/${section.filePath}`;
+
+      fetch(mediaUrl)
+        .then(res => res.text())
+        .then(text => {
+          setDynamicContent(text);
+          setIsLoadingContent(false);
+        })
+        .catch(err => {
+          console.error('Error loading markdown:', err);
+          setDynamicContent('Failed to load content.');
+          setIsLoadingContent(false);
+        });
+    }
+  }, [currentSectionIndex, lesson, topicId]);
+
+  useEffect(() => {
+    if (isVideoSection) {
+      async function initializeVideoUrl() {
+        console.log('initializeVideoUrl(): setting video url');
+        let _videoUrl = '';
+        if (currentSection?.filePath) {
+          console.log('constructing video url');
+          _videoUrl = `${DOWNLOAD_DATA_PATH}/${topicId}/${currentSection?.filePath}`;
+        }
+        console.log('rendering video: path=', _videoUrl);
+        // check if path exists
+        const topicsFileExists = await fileExists(_videoUrl);
+        if (topicsFileExists) {
+          console.log('video url exists');
+          setVideoUrl(_videoUrl);
+        } else {
+          console.error('video url doesnt exist');
+        }
+      }
+      initializeVideoUrl();
+    }
+    // Construct Video URL
+  }, [currentSection?.filePath, isVideoSection, topicId]);
+
   const goToNextSection = () => {
     if (lesson && currentSectionIndex < lesson.sections.length - 1) {
       setCurrentSectionIndex(currentSectionIndex + 1);
@@ -66,11 +152,7 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
   };
 
   const markdownStyles = {
-    body: {
-      color: '#ffffff',
-      fontSize: 16,
-      lineHeight: 24,
-    },
+    body: {color: '#ffffff', fontSize: 16, lineHeight: 24},
     heading1: {
       color: '#ffffff',
       fontSize: 24,
@@ -98,14 +180,8 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
       lineHeight: 24,
       marginBottom: 12,
     },
-    strong: {
-      color: '#ffffff',
-      fontWeight: 'bold',
-    },
-    em: {
-      color: '#a1a1aa',
-      fontStyle: 'italic',
-    },
+    strong: {color: '#ffffff', fontWeight: 'bold'},
+    em: {color: '#a1a1aa', fontStyle: 'italic'},
     code_inline: {
       backgroundColor: '#333333',
       color: '#f59e0b',
@@ -137,21 +213,13 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
       lineHeight: 24,
       marginBottom: 4,
     },
-    bullet_list: {
-      marginBottom: 12,
-    },
-    ordered_list: {
-      marginBottom: 12,
-    },
     table: {
       borderWidth: 1,
       borderColor: '#333333',
       borderRadius: 8,
       marginVertical: 12,
     },
-    thead: {
-      backgroundColor: '#1a1a1a',
-    },
+    thead: {backgroundColor: '#1a1a1a'},
     th: {
       color: '#ffffff',
       fontWeight: 'bold',
@@ -192,18 +260,13 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
     );
   }
 
-  const currentSection = lesson.sections[currentSectionIndex];
-  const isFirstSection = currentSectionIndex === 0;
-  const isLastSection = currentSectionIndex === lesson.sections.length - 1;
-
   if (showNotes) {
     return (
       <View style={styles.container}>
         <View style={styles.notesHeader}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.backToLessonButton}
-            onPress={() => setShowNotes(false)}
-          >
+            onPress={() => setShowNotes(false)}>
             <Text style={styles.backToLessonButtonText}>← Back to Lesson</Text>
           </TouchableOpacity>
           <Text style={styles.notesTitle}>Notes</Text>
@@ -221,31 +284,60 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
           <Text style={styles.progressText}>
             {currentSectionIndex + 1} of {lesson.sections.length}
           </Text>
-          <Text style={styles.sectionTitle}>{currentSection.title}</Text>
+          <Text style={styles.sectionTitle}>{currentSection?.title}</Text>
         </View>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.notesButton}
-          onPress={() => setShowNotes(true)}
-        >
+          onPress={() => setShowNotes(true)}>
           <Text style={styles.notesButtonText}>📝 Notes</Text>
         </TouchableOpacity>
         <View style={styles.progressBar}>
-          <View 
+          <View
             style={[
               styles.progressFill,
-              {width: `${((currentSectionIndex + 1) / lesson.sections.length) * 100}%`}
+              {
+                width: `${
+                  ((currentSectionIndex + 1) / lesson.sections.length) * 100
+                }%`,
+              },
             ]}
           />
         </View>
       </View>
 
       {/* Section Content */}
-      <ScrollView style={styles.contentContainer} contentContainerStyle={styles.content}>
+      <ScrollView
+        style={styles.contentContainer}
+        contentContainerStyle={styles.content}>
         <View style={styles.flashCard}>
-          <Text style={styles.flashCardTitle}>{currentSection.title}</Text>
-          <Markdown style={markdownStyles}>
-            {currentSection.content}
-          </Markdown>
+          <Text style={styles.flashCardTitle}>{currentSection?.title}</Text>
+
+          {/* Video Player Section */}
+          {isVideoSection && videoUrl && (
+            <View style={styles.videoContainer}>
+              <Video
+                source={{uri: videoUrl}}
+                style={styles.videoPlayer}
+                // seekColor="red"
+                controls={true}
+                // disableSeekbar
+                resizeMode="contain"
+                paused={true} // Start paused so it doesn't auto-blast audio
+                onError={(e: any) => console.log('Video Error:', e)}
+              />
+            </View>
+          )}
+
+          {/* Markdown Content (Dynamically loaded or Static) */}
+          {isLoadingContent ? (
+            <ActivityIndicator
+              size="small"
+              color="#8b5cf6"
+              style={{marginTop: 20}}
+            />
+          ) : (
+            <Markdown style={markdownStyles}>{dynamicContent}</Markdown>
+          )}
         </View>
       </ScrollView>
 
@@ -254,9 +346,12 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
         <TouchableOpacity
           style={[styles.navButton, isFirstSection && styles.navButtonDisabled]}
           onPress={goToPreviousSection}
-          disabled={isFirstSection}
-        >
-          <Text style={[styles.navButtonText, isFirstSection && styles.navButtonTextDisabled]}>
+          disabled={isFirstSection}>
+          <Text
+            style={[
+              styles.navButtonText,
+              isFirstSection && styles.navButtonTextDisabled,
+            ]}>
             ← Previous
           </Text>
         </TouchableOpacity>
@@ -267,7 +362,7 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
               key={index}
               style={[
                 styles.sectionDot,
-                index === currentSectionIndex && styles.sectionDotActive
+                index === currentSectionIndex && styles.sectionDotActive,
               ]}
               onPress={() => goToSection(index)}
             />
@@ -277,9 +372,12 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
         <TouchableOpacity
           style={[styles.navButton, isLastSection && styles.navButtonDisabled]}
           onPress={goToNextSection}
-          disabled={isLastSection}
-        >
-          <Text style={[styles.navButtonText, isLastSection && styles.navButtonTextDisabled]}>
+          disabled={isLastSection}>
+          <Text
+            style={[
+              styles.navButtonText,
+              isLastSection && styles.navButtonTextDisabled,
+            ]}>
             Next →
           </Text>
         </TouchableOpacity>
@@ -382,7 +480,7 @@ const styles = StyleSheet.create({
     padding: 24,
     borderWidth: 1,
     borderColor: '#333333',
-    minHeight: screenWidth * 0.8, // Make it more card-like
+    minHeight: screenWidth * 0.8,
   },
   flashCardTitle: {
     fontSize: 20,
@@ -390,6 +488,18 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     marginBottom: 20,
     textAlign: 'center',
+  },
+  videoContainer: {
+    width: '100%',
+    height: 220, // 16:9 Aspect ratio approx
+    marginBottom: 20,
+    backgroundColor: '#000',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  videoPlayer: {
+    width: '100%',
+    height: '100%',
   },
   navigationContainer: {
     flexDirection: 'row',

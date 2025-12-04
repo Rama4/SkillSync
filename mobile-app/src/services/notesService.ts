@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {Note} from '../types';
+import {Note} from '../../../lib/types';
 
 class NotesService {
   private getNotesKey(topicId: string, lessonId: string): string {
@@ -10,13 +10,16 @@ class NotesService {
     try {
       const key = this.getNotesKey(topicId, lessonId);
       const notesJson = await AsyncStorage.getItem(key);
-      
+
       if (!notesJson) {
         return [];
       }
 
       const notes: Note[] = JSON.parse(notesJson);
-      return notes.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+      return notes.sort(
+        (a, b) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+      );
     } catch (error) {
       console.error('Error loading notes:', error);
       return [];
@@ -27,7 +30,7 @@ class NotesService {
     try {
       const key = this.getNotesKey(topicId, lessonId);
       const existingNotes = await this.getNotes(topicId, lessonId);
-      
+
       // Update existing note or add new one
       const noteIndex = existingNotes.findIndex(n => n.id === note.id);
       if (noteIndex >= 0) {
@@ -44,11 +47,15 @@ class NotesService {
     }
   }
 
-  async deleteNote(topicId: string, lessonId: string, noteId: string): Promise<void> {
+  async deleteNote(
+    topicId: string,
+    lessonId: string,
+    noteId: string,
+  ): Promise<void> {
     try {
       const key = this.getNotesKey(topicId, lessonId);
       const existingNotes = await this.getNotes(topicId, lessonId);
-      
+
       const filteredNotes = existingNotes.filter(note => note.id !== noteId);
       await AsyncStorage.setItem(key, JSON.stringify(filteredNotes));
     } catch (error) {
@@ -57,11 +64,15 @@ class NotesService {
     }
   }
 
-  async deleteNoteAudio(topicId: string, lessonId: string, noteId: string): Promise<Note | null> {
+  async deleteNoteAudio(
+    topicId: string,
+    lessonId: string,
+    noteId: string,
+  ): Promise<Note | null> {
     try {
       const key = this.getNotesKey(topicId, lessonId);
       const existingNotes = await this.getNotes(topicId, lessonId);
-      
+
       const noteIndex = existingNotes.findIndex(n => n.id === noteId);
       if (noteIndex >= 0) {
         const updatedNote = {
@@ -70,11 +81,11 @@ class NotesService {
           updatedAt: new Date().toISOString(),
         };
         existingNotes[noteIndex] = updatedNote;
-        
+
         await AsyncStorage.setItem(key, JSON.stringify(existingNotes));
         return updatedNote;
       }
-      
+
       return null;
     } catch (error) {
       console.error('Error deleting note audio:', error);
@@ -82,17 +93,19 @@ class NotesService {
     }
   }
 
-  async getAllNotes(): Promise<{topicId: string; lessonId: string; notes: Note[]}[]> {
+  async getAllNotes(): Promise<
+    {topicId: string; lessonId: string; notes: Note[]}[]
+  > {
     try {
       const keys = await AsyncStorage.getAllKeys();
       const notesKeys = keys.filter(key => key.startsWith('notes_'));
-      
+
       const allNotes = await Promise.all(
         notesKeys.map(async key => {
           const [, topicId, lessonId] = key.split('_');
           const notes = await this.getNotes(topicId, lessonId);
           return {topicId, lessonId, notes};
-        })
+        }),
       );
 
       return allNotes.filter(item => item.notes.length > 0);

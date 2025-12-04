@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
-import {Note} from '../types';
+import {Note} from '../../../lib/types';
 import {notesService} from '../services/notesService';
 import {audioRecorder} from '../native/AudioRecorder';
 import AudioPlayer from './AudioPlayer';
@@ -34,7 +34,9 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
   const [markdown, setMarkdown] = useState(note?.markdown || '');
   const [isRecording, setIsRecording] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [audioPath, setAudioPath] = useState<string | null>(note?.audioFile || null);
+  const [audioPath, setAudioPath] = useState<string | null>(
+    note?.audioFile || null,
+  );
   const [isPlaying, setIsPlaying] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
 
@@ -59,7 +61,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
       removeProgressListener();
       removeCompleteListener();
       removeErrorListener();
-      
+
       // Stop any ongoing recording/playback
       audioRecorder.getStatus().then(status => {
         if (status.isRecording) {
@@ -82,7 +84,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
     try {
       // Generate unique filename for the recording
       const filename = `note_${Date.now()}.m4a`;
-      
+
       const result = await audioRecorder.startRecording({
         filename,
         sampleRate: 44100,
@@ -99,7 +101,8 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
       console.error('Error starting recording:', error);
       Alert.alert(
         'Recording Error',
-        error.message || 'Failed to start recording. Please check microphone permissions.'
+        error.message ||
+          'Failed to start recording. Please check microphone permissions.',
       );
     }
   }, []);
@@ -109,12 +112,17 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
 
     try {
       const result = await audioRecorder.stopRecording();
-      
+
       if (result.success && result.filePath) {
         setAudioPath(result.filePath);
-        console.log('Recording stopped:', result.filePath, 'Duration:', result.duration);
+        console.log(
+          'Recording stopped:',
+          result.filePath,
+          'Duration:',
+          result.duration,
+        );
       }
-      
+
       setIsRecording(false);
       setRecordingDuration(0);
     } catch (error: any) {
@@ -167,7 +175,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
             if (isPlaying) {
               await audioRecorder.stopPlayback();
             }
-            
+
             if (audioPath) {
               try {
                 await audioRecorder.deleteFile(audioPath);
@@ -175,12 +183,12 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
                 console.error('Error deleting audio file:', error);
               }
             }
-            
+
             setAudioPath(null);
             setIsPlaying(false);
           },
         },
-      ]
+      ],
     );
   }, [audioPath, isPlaying]);
 
@@ -206,7 +214,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
 
       await notesService.saveNote(topicId, lessonId, savedNote);
       console.log('Note saved successfully:', savedNote);
-      
+
       onSave(savedNote);
     } catch (error) {
       console.error('Error saving note:', error);
@@ -254,22 +262,23 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
 
         <View style={styles.audioSection}>
           <Text style={styles.label}>Audio Recording</Text>
-          
+
           {/* Audio Player */}
           {audioPath && !isRecording && (
             <View style={styles.audioPlayerContainer}>
-              <AudioPlayer 
+              <AudioPlayer
                 filePath={audioPath}
-                onError={(error) => {
+                onError={error => {
                   console.error('Audio player error:', error);
                   Alert.alert('Playback Error', error);
                 }}
               />
-              <TouchableOpacity 
-                style={styles.deleteAudioButton} 
-                onPress={deleteAudio}
-              >
-                <Text style={styles.deleteAudioButtonText}>🗑 Delete Recording</Text>
+              <TouchableOpacity
+                style={styles.deleteAudioButton}
+                onPress={deleteAudio}>
+                <Text style={styles.deleteAudioButtonText}>
+                  🗑 Delete Recording
+                </Text>
               </TouchableOpacity>
             </View>
           )}
@@ -285,9 +294,9 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
                   </Text>
                 </View>
               </View>
-              <RecordingVisualizer 
-                isRecording={isRecording} 
-                duration={recordingDuration} 
+              <RecordingVisualizer
+                isRecording={isRecording}
+                duration={recordingDuration}
               />
             </View>
           )}
@@ -295,13 +304,12 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
           {/* Recording Controls */}
           <View style={styles.recordingControls}>
             {!isRecording ? (
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[
-                  styles.recordButton, 
-                  audioPath && styles.recordButtonSecondary
-                ]} 
-                onPress={startRecording}
-              >
+                  styles.recordButton,
+                  audioPath && styles.recordButtonSecondary,
+                ]}
+                onPress={startRecording}>
                 <View style={styles.recordButtonContent}>
                   <View style={styles.micIcon}>
                     <Text style={styles.micIconText}>🎤</Text>
@@ -312,10 +320,9 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
                 </View>
               </TouchableOpacity>
             ) : (
-              <TouchableOpacity 
-                style={[styles.recordButton, styles.stopButton]} 
-                onPress={stopRecording}
-              >
+              <TouchableOpacity
+                style={[styles.recordButton, styles.stopButton]}
+                onPress={stopRecording}>
                 <View style={styles.recordButtonContent}>
                   <View style={styles.stopIcon}>
                     <Text style={styles.stopIconText}>⏹</Text>
@@ -328,19 +335,20 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
         </View>
 
         <View style={styles.actions}>
-          <TouchableOpacity 
-            style={[styles.saveButton, isSaving && styles.saveButtonDisabled]} 
+          <TouchableOpacity
+            style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
             onPress={handleSave}
-            disabled={isSaving}
-          >
+            disabled={isSaving}>
             {isSaving ? (
               <ActivityIndicator size="small" color="#ffffff" />
             ) : (
               <Text style={styles.saveButtonText}>💾 Save Note</Text>
             )}
           </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.cancelActionButton} onPress={onCancel}>
+
+          <TouchableOpacity
+            style={styles.cancelActionButton}
+            onPress={onCancel}>
             <Text style={styles.cancelActionButtonText}>Cancel</Text>
           </TouchableOpacity>
         </View>

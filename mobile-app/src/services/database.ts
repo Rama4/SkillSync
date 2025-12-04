@@ -1,5 +1,5 @@
 import SQLite from 'react-native-sqlite-storage';
-import {TopicMeta, Lesson, TopicsIndex, TopicSummary} from '../types';
+import {TopicMeta, Lesson} from '../../../lib/types';
 
 // Enable debugging
 SQLite.DEBUG(true);

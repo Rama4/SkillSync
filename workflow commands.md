@@ -1,0 +1,30 @@
+# Workflow commands:
+
+## convert videos to 720p:
+
+```
+ffmpeg -i "input video.mp4"
+-vf "scale=1280:-2" \
+-c:v libx264 -profile:v main -level:v 3.1 -pix_fmt yuv420p \
+-crf 22 -preset medium \
+-c:a aac -b:a 128k \
+-movflags +faststart \
+"output/input video.mp4"
+```
+
+## convert videos to 1080p:
+
+```
+ffmpeg -i "input_video.mp4" \
+-c:v libx264 -profile:v main -level:v 4.0 -pix_fmt yuv420p \
+-crf 22 -preset medium \
+-c:a aac -b:a 128k \
+-movflags +faststart \
+"output/output_video_1080p.mp4"
+```
+
+## move the metadata (moov atom) to the start of the video:
+
+```
+ffmpeg -i "Building makemore Part 4： Becoming a Backprop Ninja [q8SA3rM6ckI].mp4" -c copy -movflags +faststart "output/Building makemore Part 4： Becoming a Backprop Ninja [q8SA3rM6ckI].mp4"
+```

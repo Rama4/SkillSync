@@ -9,7 +9,8 @@ import {
   Alert,
 } from 'react-native';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
-import {RootStackParamList, TopicMeta} from '../types';
+import {TopicMeta} from '../../../lib/types';
+import {RootStackParamList} from '../../../lib/mobile_types';
 import {databaseService} from '../services/database';
 import {syncService} from '../services/syncService';
 

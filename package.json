@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:mobile": "cd mobile-app && npm run start",
+    "dev:android": "cd mobile-app && npm run android --terminal git bash",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

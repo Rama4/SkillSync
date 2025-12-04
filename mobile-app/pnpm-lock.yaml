@@ -44,6 +44,9 @@ importers:
       react-native-sqlite-storage:
         specifier: ^6.0.1
         version: 6.0.1(react-native@0.76.6(@babel/core@7.28.5)(@babel/preset-env@7.28.5(@babel/core@7.28.5))(@react-native-community/cli-server-api@15.0.1)(@types/react@18.3.27)(react@18.3.1))
+      react-native-video:
+        specifier: ^6.18.0
+        version: 6.18.0(react-native@0.76.6(@babel/core@7.28.5)(@babel/preset-env@7.28.5(@babel/core@7.28.5))(@react-native-community/cli-server-api@15.0.1)(@types/react@18.3.27)(react@18.3.1))(react@18.3.1)
     devDependencies:
       '@babel/core':
         specifier: ^7.25.2
@@ -3200,6 +3203,12 @@ packages:
     resolution: {integrity: sha512-1tDFjrint6X6qSYKf3gDyz+XB+X79jfiL6xTugKHPRtF0WvqMtVgdLuNqZunIXjNEvNtNVEbXaeZ6MsguFu00A==}
     peerDependencies:
       react-native: '>=0.14.0'
+
+  react-native-video@6.18.0:
+    resolution: {integrity: sha512-9BjAtAh1uGq6h/GNCCh5yzb/iI9qJHuflwNGExyhoUxbhPD1s+15h+CdpJ2MKKJTXw6J7w+nQOp1Ywa54R8w7Q==}
+    peerDependencies:
+      react: '*'
+      react-native: '*'
 
   react-native@0.76.6:
     resolution: {integrity: sha512-AsRi+ud6v6ADH7ZtSOY42kRB4nbM0KtSu450pGO4pDudl4AEK/AF96ai88snb2/VJJSGGa/49QyJVFXxz/qoFg==}
@@ -7936,6 +7945,11 @@ snapshots:
 
   react-native-sqlite-storage@6.0.1(react-native@0.76.6(@babel/core@7.28.5)(@babel/preset-env@7.28.5(@babel/core@7.28.5))(@react-native-community/cli-server-api@15.0.1)(@types/react@18.3.27)(react@18.3.1)):
     dependencies:
+      react-native: 0.76.6(@babel/core@7.28.5)(@babel/preset-env@7.28.5(@babel/core@7.28.5))(@react-native-community/cli-server-api@15.0.1)(@types/react@18.3.27)(react@18.3.1)
+
+  react-native-video@6.18.0(react-native@0.76.6(@babel/core@7.28.5)(@babel/preset-env@7.28.5(@babel/core@7.28.5))(@react-native-community/cli-server-api@15.0.1)(@types/react@18.3.27)(react@18.3.1))(react@18.3.1):
+    dependencies:
+      react: 18.3.1
       react-native: 0.76.6(@babel/core@7.28.5)(@babel/preset-env@7.28.5(@babel/core@7.28.5))(@react-native-community/cli-server-api@15.0.1)(@types/react@18.3.27)(react@18.3.1)
 
   react-native@0.76.6(@babel/core@7.28.5)(@babel/preset-env@7.28.5(@babel/core@7.28.5))(@react-native-community/cli-server-api@15.0.1)(@types/react@18.3.27)(react@18.3.1):

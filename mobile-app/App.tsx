@@ -12,7 +12,7 @@ import HomeScreen from './src/screens/HomeScreen';
 import TopicScreen from './src/screens/TopicScreen';
 import LessonScreen from './src/screens/LessonScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
-import {RootStackParamList} from './src/types';
+import {RootStackParamList} from '../lib/mobile_types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
