@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,6 @@ import {
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import Markdown from 'react-native-markdown-display';
 import Video from 'react-native-video';
-// import VideoPlayer from 'react-native-video-controls';
 import {RootStackParamList} from '../../../lib/mobile_types';
 import {LessonSection, Lesson} from '../../../lib/types';
 import {databaseService} from '../services/database';
@@ -44,7 +43,8 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
   const currentSection: LessonSection | undefined =
     lesson?.sections[currentSectionIndex];
   const isFirstSection = currentSectionIndex === 0;
-  const isLastSection = currentSectionIndex === lesson?.sections.length - 1;
+  const isLastSection =
+    currentSectionIndex === (lesson?.sections?.length ?? 0) - 1;
 
   // Determine if this section is a video type
   const isVideoSection =
@@ -55,7 +55,7 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
     loadLessonData();
   }, [lessonId]);
 
-  const loadLessonData = async () => {
+  const loadLessonData = useCallback(async () => {
     try {
       setIsLoading(true);
       const lessonData = await databaseService.getLesson(lessonId);
@@ -72,7 +72,7 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [lessonId, navigation]);
 
   // Effect to handle content fetching
   useEffect(() => {
