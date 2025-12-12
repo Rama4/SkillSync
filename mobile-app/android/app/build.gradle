@@ -84,6 +84,17 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+        externalNativeBuild {
+            cmake {
+                // Read CMake make program path from local.properties
+                def cmakeMakeProgram = project.hasProperty('cmake.make.program') ? project.property('cmake.make.program') : null
+                if (cmakeMakeProgram) {
+                    arguments "-DCMAKE_MAKE_PROGRAM=${cmakeMakeProgram}", "-DCMAKE_OBJECT_PATH_MAX=1024"
+                } else {
+                    arguments "-DCMAKE_OBJECT_PATH_MAX=1024"
+                }
+            }
+        }
     }
     signingConfigs {
         debug {

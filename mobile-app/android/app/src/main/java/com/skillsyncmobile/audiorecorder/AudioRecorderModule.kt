@@ -18,8 +18,10 @@ class AudioRecorderModule(reactContext: ReactApplicationContext) :
     private var mediaRecorder: MediaRecorder? = null
     private var mediaPlayer: MediaPlayer? = null
     private var currentFilePath: String? = null
+    private var currentPlaybackPath: String? = null  // Track which file is loaded in player
     private var isRecording = false
     private var isPlaying = false
+    private var isPaused = false  // Track paused state separately
     private var recordingStartTime: Long = 0
     private var durationTimer: Timer? = null
 
@@ -42,7 +44,10 @@ class AudioRecorderModule(reactContext: ReactApplicationContext) :
         val status = Arguments.createMap().apply {
             putBoolean("isRecording", isRecording)
             putBoolean("isPlaying", isPlaying)
+            putBoolean("isPaused", isPaused)
+            putBoolean("hasPlayer", mediaPlayer != null)
             putString("currentFilePath", currentFilePath)
+            putString("currentPlaybackPath", currentPlaybackPath)
             if (isRecording) {
                 putDouble("duration", (System.currentTimeMillis() - recordingStartTime) / 1000.0)
             }
@@ -201,9 +206,19 @@ class AudioRecorderModule(reactContext: ReactApplicationContext) :
     // Start playback
     @ReactMethod
     fun startPlayback(filePath: String, promise: Promise) {
-        if (isPlaying) {
-            promise.reject("ALREADY_PLAYING", "Playback is already in progress")
+        // If already playing the same file, just resolve
+        if (isPlaying && currentPlaybackPath == filePath) {
+            val result = Arguments.createMap().apply {
+                putBoolean("success", true)
+                putInt("duration", mediaPlayer?.duration ?: 0)
+            }
+            promise.resolve(result)
             return
+        }
+
+        // If playing a different file, stop current playback first
+        if (isPlaying || mediaPlayer != null) {
+            cleanupPlayer()
         }
 
         val file = File(filePath)
@@ -217,12 +232,14 @@ class AudioRecorderModule(reactContext: ReactApplicationContext) :
                 setDataSource(filePath)
                 setOnCompletionListener {
                     this@AudioRecorderModule.isPlaying = false
+                    this@AudioRecorderModule.isPaused = false
                     sendEvent("onPlaybackComplete", Arguments.createMap().apply {
                         putString("filePath", filePath)
                     })
                 }
                 setOnErrorListener { _, what, extra ->
                     this@AudioRecorderModule.isPlaying = false
+                    this@AudioRecorderModule.isPaused = false
                     sendEvent("onPlaybackError", Arguments.createMap().apply {
                         putInt("errorCode", what)
                         putInt("errorExtra", extra)
@@ -234,6 +251,8 @@ class AudioRecorderModule(reactContext: ReactApplicationContext) :
             }
             
             isPlaying = true
+            isPaused = false
+            currentPlaybackPath = filePath
 
             val result = Arguments.createMap().apply {
                 putBoolean("success", true)
@@ -250,7 +269,7 @@ class AudioRecorderModule(reactContext: ReactApplicationContext) :
     // Stop playback
     @ReactMethod
     fun stopPlayback(promise: Promise) {
-        if (!isPlaying) {
+        if (mediaPlayer == null) {
             promise.resolve(true)
             return
         }
@@ -262,6 +281,8 @@ class AudioRecorderModule(reactContext: ReactApplicationContext) :
             }
             mediaPlayer = null
             isPlaying = false
+            isPaused = false
+            currentPlaybackPath = null
             promise.resolve(true)
 
         } catch (e: Exception) {
@@ -273,14 +294,17 @@ class AudioRecorderModule(reactContext: ReactApplicationContext) :
     // Pause playback
     @ReactMethod
     fun pausePlayback(promise: Promise) {
-        if (!isPlaying || mediaPlayer == null) {
-            promise.reject("NOT_PLAYING", "No playback in progress")
+        if (mediaPlayer == null) {
+            promise.reject("NO_PLAYER", "No media player initialized")
             return
         }
 
         try {
-            mediaPlayer?.pause()
+            if (isPlaying) {
+                mediaPlayer?.pause()
+            }
             isPlaying = false
+            isPaused = true
             promise.resolve(true)
         } catch (e: Exception) {
             promise.reject("PAUSE_ERROR", "Failed to pause playback: ${e.message}")
@@ -298,9 +322,42 @@ class AudioRecorderModule(reactContext: ReactApplicationContext) :
         try {
             mediaPlayer?.start()
             isPlaying = true
+            isPaused = false
             promise.resolve(true)
         } catch (e: Exception) {
             promise.reject("RESUME_ERROR", "Failed to resume playback: ${e.message}")
+        }
+    }
+
+    // Seek to position in milliseconds
+    @ReactMethod
+    fun seekToPosition(position: Int, promise: Promise) {
+        if (mediaPlayer == null) {
+            promise.reject("NO_PLAYER", "No media player initialized")
+            return
+        }
+
+        try {
+            mediaPlayer?.seekTo(position)
+            promise.resolve(true)
+        } catch (e: Exception) {
+            promise.reject("SEEK_ERROR", "Failed to seek: ${e.message}")
+        }
+    }
+
+    // Get current position in milliseconds
+    @ReactMethod
+    fun getCurrentPosition(promise: Promise) {
+        if (mediaPlayer == null) {
+            promise.resolve(0)
+            return
+        }
+
+        try {
+            val position = mediaPlayer?.currentPosition ?: 0
+            promise.resolve(position)
+        } catch (e: Exception) {
+            promise.resolve(0)
         }
     }
 
@@ -389,6 +446,8 @@ class AudioRecorderModule(reactContext: ReactApplicationContext) :
         }
         mediaPlayer = null
         isPlaying = false
+        isPaused = false
+        currentPlaybackPath = null
     }
 
     private fun sendEvent(eventName: String, params: WritableMap) {

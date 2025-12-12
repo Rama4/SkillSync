@@ -1,0 +1,19 @@
+# Example local.properties file
+# Copy this file to local.properties and update the paths for your local environment
+# This file should NOT be committed to version control
+
+# CMake configuration - Update this path to match your local Android SDK installation
+# cmake.make.program=C:\\Users\\YourName\\AppData\\Local\\Android\\Sdk\\cmake\\3.22.1\\bin\\ninja.exe
+
+# Android SDK path (usually set automatically by Android Studio)
+# sdk.dir=C:\\Users\\YourName\\AppData\\Local\\Android\\Sdk
+
+# Android NDK path (if using NDK)
+# ndk.dir=C:\\Users\\YourName\\AppData\\Local\\Android\\Sdk\\ndk\\21.4.7075529
+
+# Instructions:
+# 1. Copy this file to local.properties
+# 2. Update the cmake.make.program path to match your local CMake installation
+# 3. The cmake.make.program is typically found at: [Android SDK]/cmake/[version]/bin/ninja.exe
+# 4. On Windows, use double backslashes (\\) in paths or forward slashes (/)
+# 5. On macOS/Linux, use forward slashes (/) in paths

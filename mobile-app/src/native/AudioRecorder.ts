@@ -23,7 +23,10 @@ export interface RecordingResult {
 export interface RecorderStatus {
   isRecording: boolean;
   isPlaying: boolean;
+  isPaused: boolean;
+  hasPlayer: boolean;
   currentFilePath: string | null;
+  currentPlaybackPath: string | null;
   duration?: number;
 }
 
@@ -63,6 +66,8 @@ interface AudioRecorderModuleType {
   stopPlayback(): Promise<boolean>;
   pausePlayback(): Promise<boolean>;
   resumePlayback(): Promise<boolean>;
+  seekToPosition(position: number): Promise<boolean>;
+  getCurrentPosition(): Promise<number>;
   deleteFile(filePath: string): Promise<boolean>;
   getFileInfo(filePath: string): Promise<FileInfo>;
   addListener(eventName: string): void;
@@ -99,23 +104,32 @@ class AudioRecorder {
   private setupEventListeners() {
     // Recording progress events
     this.subscriptions.push(
-      eventEmitter.addListener('onRecordingProgress', (event: RecordingProgressEvent) => {
-        this.progressListeners.forEach(listener => listener(event));
-      })
+      eventEmitter.addListener(
+        'onRecordingProgress',
+        (event: RecordingProgressEvent) => {
+          this.progressListeners.forEach(listener => listener(event));
+        },
+      ),
     );
 
     // Playback complete events
     this.subscriptions.push(
-      eventEmitter.addListener('onPlaybackComplete', (event: PlaybackCompleteEvent) => {
-        this.completeListeners.forEach(listener => listener(event));
-      })
+      eventEmitter.addListener(
+        'onPlaybackComplete',
+        (event: PlaybackCompleteEvent) => {
+          this.completeListeners.forEach(listener => listener(event));
+        },
+      ),
     );
 
     // Playback error events
     this.subscriptions.push(
-      eventEmitter.addListener('onPlaybackError', (event: PlaybackErrorEvent) => {
-        this.errorListeners.forEach(listener => listener(event));
-      })
+      eventEmitter.addListener(
+        'onPlaybackError',
+        (event: PlaybackErrorEvent) => {
+          this.errorListeners.forEach(listener => listener(event));
+        },
+      ),
     );
   }
 
@@ -134,11 +148,12 @@ class AudioRecorder {
         PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
         {
           title: 'Microphone Permission',
-          message: 'SkillSync needs access to your microphone to record voice notes.',
+          message:
+            'SkillSync needs access to your microphone to record voice notes.',
           buttonNeutral: 'Ask Me Later',
           buttonNegative: 'Cancel',
           buttonPositive: 'OK',
-        }
+        },
       );
       return granted === PermissionsAndroid.RESULTS.GRANTED;
     } catch (err) {
@@ -171,7 +186,9 @@ class AudioRecorder {
    * @param options - Recording configuration options
    * @returns Promise<RecordingResult>
    */
-  async startRecording(options: RecordingOptions = {}): Promise<RecordingResult> {
+  async startRecording(
+    options: RecordingOptions = {},
+  ): Promise<RecordingResult> {
     // Check permission first
     const hasPermission = await this.checkPermission();
     if (!hasPermission) {
@@ -231,6 +248,23 @@ class AudioRecorder {
    */
   async resumePlayback(): Promise<boolean> {
     return AudioRecorderModule.resumePlayback();
+  }
+
+  /**
+   * Seek to a specific position in the audio
+   * @param position - Position in milliseconds
+   * @returns Promise<boolean>
+   */
+  async seekToPosition(position: number): Promise<boolean> {
+    return AudioRecorderModule.seekToPosition(position);
+  }
+
+  /**
+   * Get current playback position
+   * @returns Promise<number> - Position in milliseconds
+   */
+  async getCurrentPosition(): Promise<number> {
+    return AudioRecorderModule.getCurrentPosition();
   }
 
   /**

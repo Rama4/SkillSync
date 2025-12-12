@@ -1,5 +1,28 @@
 # Workflow commands:
 
+## Development commands:
+
+### web app:
+
+
+pnpm dev
+
+
+### mobile app dev mode:
+
+
+pnpm dev:mobile
+
+
+### mobile app dev prod mode:
+
+
+pnpm build:android
+
+
+
+
+
 ## convert videos to 720p:
 
 ```

@@ -6,6 +6,7 @@
     "dev": "next dev",
     "dev:mobile": "cd mobile-app && npm run start",
     "dev:android": "cd mobile-app && npm run android --terminal git bash",
+    "build:android": "cd mobile-app && npm run build:apk",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

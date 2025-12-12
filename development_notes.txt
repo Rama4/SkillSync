@@ -1,8 +1,0 @@
-
-
-development notes:
-
-
-as of now, db table drop and re initialize upon every app start to keep up with changes in schema.
-
-

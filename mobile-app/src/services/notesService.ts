@@ -1,15 +1,19 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import {createMMKV} from 'react-native-mmkv';
 import {Note} from '../../../lib/types';
+
+const storage = createMMKV({
+  id: 'notes-storage',
+});
 
 class NotesService {
   private getNotesKey(topicId: string, lessonId: string): string {
     return `notes_${topicId}_${lessonId}`;
   }
 
-  async getNotes(topicId: string, lessonId: string): Promise<Note[]> {
+  getNotes(topicId: string, lessonId: string): Note[] {
     try {
       const key = this.getNotesKey(topicId, lessonId);
-      const notesJson = await AsyncStorage.getItem(key);
+      const notesJson = storage.getString(key);
 
       if (!notesJson) {
         return [];
@@ -26,10 +30,10 @@ class NotesService {
     }
   }
 
-  async saveNote(topicId: string, lessonId: string, note: Note): Promise<Note> {
+  saveNote(topicId: string, lessonId: string, note: Note): Note {
     try {
       const key = this.getNotesKey(topicId, lessonId);
-      const existingNotes = await this.getNotes(topicId, lessonId);
+      const existingNotes = this.getNotes(topicId, lessonId);
 
       // Update existing note or add new one
       const noteIndex = existingNotes.findIndex(n => n.id === note.id);
@@ -39,7 +43,7 @@ class NotesService {
         existingNotes.push(note);
       }
 
-      await AsyncStorage.setItem(key, JSON.stringify(existingNotes));
+      storage.set(key, JSON.stringify(existingNotes));
       return note;
     } catch (error) {
       console.error('Error saving note:', error);
@@ -47,31 +51,27 @@ class NotesService {
     }
   }
 
-  async deleteNote(
-    topicId: string,
-    lessonId: string,
-    noteId: string,
-  ): Promise<void> {
+  deleteNote(topicId: string, lessonId: string, noteId: string): void {
     try {
       const key = this.getNotesKey(topicId, lessonId);
-      const existingNotes = await this.getNotes(topicId, lessonId);
+      const existingNotes = this.getNotes(topicId, lessonId);
 
       const filteredNotes = existingNotes.filter(note => note.id !== noteId);
-      await AsyncStorage.setItem(key, JSON.stringify(filteredNotes));
+      storage.set(key, JSON.stringify(filteredNotes));
     } catch (error) {
       console.error('Error deleting note:', error);
       throw error;
     }
   }
 
-  async deleteNoteAudio(
+  deleteNoteAudio(
     topicId: string,
     lessonId: string,
     noteId: string,
-  ): Promise<Note | null> {
+  ): Note | null {
     try {
       const key = this.getNotesKey(topicId, lessonId);
-      const existingNotes = await this.getNotes(topicId, lessonId);
+      const existingNotes = this.getNotes(topicId, lessonId);
 
       const noteIndex = existingNotes.findIndex(n => n.id === noteId);
       if (noteIndex >= 0) {
@@ -82,7 +82,7 @@ class NotesService {
         };
         existingNotes[noteIndex] = updatedNote;
 
-        await AsyncStorage.setItem(key, JSON.stringify(existingNotes));
+        storage.set(key, JSON.stringify(existingNotes));
         return updatedNote;
       }
 
@@ -93,33 +93,32 @@ class NotesService {
     }
   }
 
-  async getAllNotes(): Promise<
-    {topicId: string; lessonId: string; notes: Note[]}[]
-  > {
+  getAllNotes(): {topicId: string; lessonId: string; notes: Note[]}[] {
     try {
-      const keys = await AsyncStorage.getAllKeys();
-      const notesKeys = keys.filter(key => key.startsWith('notes_'));
+      const keys = storage.getAllKeys();
+      const notesKeys = keys.filter((key: string) => key.startsWith('notes_'));
 
-      const allNotes = await Promise.all(
-        notesKeys.map(async key => {
-          const [, topicId, lessonId] = key.split('_');
-          const notes = await this.getNotes(topicId, lessonId);
-          return {topicId, lessonId, notes};
-        }),
+      const allNotes = notesKeys.map((key: string) => {
+        const [, topicId, lessonId] = key.split('_');
+        const notes = this.getNotes(topicId, lessonId);
+        return {topicId, lessonId, notes};
+      });
+
+      return allNotes.filter(
+        (item: {topicId: string; lessonId: string; notes: Note[]}) =>
+          item.notes.length > 0,
       );
-
-      return allNotes.filter(item => item.notes.length > 0);
     } catch (error) {
       console.error('Error loading all notes:', error);
       return [];
     }
   }
 
-  async clearAllNotes(): Promise<void> {
+  clearAllNotes(): void {
     try {
-      const keys = await AsyncStorage.getAllKeys();
-      const notesKeys = keys.filter(key => key.startsWith('notes_'));
-      await AsyncStorage.multiRemove(notesKeys);
+      const keys = storage.getAllKeys();
+      const notesKeys = keys.filter((key: string) => key.startsWith('notes_'));
+      notesKeys.forEach((key: string) => storage.remove(key));
     } catch (error) {
       console.error('Error clearing all notes:', error);
       throw error;

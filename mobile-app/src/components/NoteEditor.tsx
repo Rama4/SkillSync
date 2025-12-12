@@ -13,7 +13,6 @@ import {Note} from '../../../lib/types';
 import {notesService} from '../services/notesService';
 import {audioRecorder} from '../native/AudioRecorder';
 import AudioPlayer from './AudioPlayer';
-import RecordingVisualizer from './RecordingVisualizer';
 
 interface NoteEditorProps {
   note?: Note | null;
@@ -95,7 +94,6 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
       if (result.success) {
         setIsRecording(true);
         setRecordingDuration(0);
-        console.log('Recording started:', result.filePath);
       }
     } catch (error: any) {
       console.error('Error starting recording:', error);
@@ -115,12 +113,6 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
 
       if (result.success && result.filePath) {
         setAudioPath(result.filePath);
-        console.log(
-          'Recording stopped:',
-          result.filePath,
-          'Duration:',
-          result.duration,
-        );
       }
 
       setIsRecording(false);
@@ -131,36 +123,6 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
       setIsRecording(false);
     }
   }, [isRecording]);
-
-  const playAudio = useCallback(async () => {
-    if (!audioPath) {
-      Alert.alert('No Audio', 'No audio recording available');
-      return;
-    }
-
-    if (isPlaying) {
-      // Stop current playback
-      try {
-        await audioRecorder.stopPlayback();
-        setIsPlaying(false);
-      } catch (error) {
-        console.error('Error stopping playback:', error);
-      }
-      return;
-    }
-
-    // Start playback
-    try {
-      const result = await audioRecorder.startPlayback(audioPath);
-      if (result.success) {
-        setIsPlaying(true);
-        console.log('Playback started, duration:', result.duration);
-      }
-    } catch (error: any) {
-      console.error('Error playing audio:', error);
-      Alert.alert('Playback Error', error.message || 'Failed to play audio');
-    }
-  }, [audioPath, isPlaying]);
 
   const deleteAudio = useCallback(() => {
     Alert.alert(
@@ -294,10 +256,6 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
                   </Text>
                 </View>
               </View>
-              <RecordingVisualizer
-                isRecording={isRecording}
-                duration={recordingDuration}
-              />
             </View>
           )}
 
