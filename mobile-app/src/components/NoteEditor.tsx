@@ -18,6 +18,7 @@ interface NoteEditorProps {
   note?: Note | null;
   topicId: string;
   lessonId: string;
+  lessonTitle?: string;
   onSave: (note: Note) => void;
   onCancel: () => void;
 }
@@ -26,6 +27,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
   note,
   topicId,
   lessonId,
+  lessonTitle = '',
   onSave,
   onCancel,
 }) => {
@@ -106,7 +108,9 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
   }, []);
 
   const stopRecording = useCallback(async () => {
-    if (!isRecording) return;
+    if (!isRecording) {
+      return;
+    }
 
     try {
       const result = await audioRecorder.stopRecording();
@@ -154,8 +158,25 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
     );
   }, [audioPath, isPlaying]);
 
+  const generateAudioNoteTitle = useCallback((): string => {
+    const existingNotes = notesService.getNotes(topicId, lessonId);
+    const audioNotes = existingNotes.filter(n => n.audioFile);
+    const recordingNumber = audioNotes.length + 1;
+    return lessonTitle
+      ? `${lessonTitle} ${recordingNumber}`
+      : `Recording ${recordingNumber}`;
+  }, [topicId, lessonId, lessonTitle]);
+
   const handleSave = async () => {
-    if (!title.trim()) {
+    // Auto-generate title if empty but audio exists
+    let finalTitle = title.trim();
+    const hasAudio = audioPath || note?.audioFile;
+
+    if (!finalTitle && hasAudio) {
+      finalTitle = generateAudioNoteTitle();
+    }
+
+    if (!finalTitle) {
       Alert.alert('Missing Title', 'Please enter a title for your note');
       return;
     }
@@ -167,8 +188,8 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
       const savedNote: Note = {
         id: note?.id || `note_${Date.now()}`,
         lessonId,
-        title: title.trim(),
-        markdown: markdown.trim(),
+        title: finalTitle,
+        markdown: markdown.trim() || '',
         audioFile: audioPath || note?.audioFile,
         createdAt: note?.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString(),

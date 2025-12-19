@@ -5,16 +5,19 @@ A React Native mobile app for offline-first learning with flashcard-style conten
 ## Features
 
 ✅ **Offline-First Architecture**
+
 - SQLite database for local storage
 - Reads content from local Documents folder
 - Works completely offline with local files
 
 ✅ **Learning Content**
+
 - Flashcard-style lesson sections
 - Markdown rendering with syntax highlighting
 - Progress tracking through lessons
 
 ✅ **Modern UI**
+
 - Dark theme optimized for learning
 - Intuitive navigation between topics and lessons
 - Progress indicators and section navigation
@@ -37,6 +40,7 @@ src/
 ├── services/           # Database and sync services
 ├── types/              # TypeScript type definitions
 └── navigation/         # Navigation configuration
+└── utils/              # File system utils, constants
 ```
 
 ## Getting Started
@@ -51,23 +55,27 @@ src/
 ### Installation
 
 1. Install dependencies:
+
 ```bash
 npm install
 ```
 
 2. Start Metro bundler:
+
 ```bash
 npm start
 ```
 
 3. Run on Android:
+
 ```bash
 npm run android
 ```
 
 ### First Time Setup
 
-1. **Prepare Content**: Place your learning content in your phone's Download folder:
+1. **Prepare Content**: Place your learning content in your phone's Download folder (configure in `mobile-app\src\utils\constants.ts`):
+
    ```
    Download/SkillSync/data/
    ├── topics.json (optional - lists available topics)
@@ -79,7 +87,7 @@ npm run android
            └── ...
    ```
 
-2. **Load Content**: 
+2. **Load Content**:
    - Open the app
    - Go to Settings
    - Tap "Load All Content" to import from local files
@@ -90,6 +98,7 @@ npm run android
 ### Data Source
 
 The app reads content from your phone's local Download folder:
+
 - **Path**: `Download/SkillSync/data/`
 - **Topics**: Auto-discovered from folder names or `topics.json`
 - **Structure**: Each topic has its own folder with `topic.json` and `lessons/` subfolder
@@ -159,6 +168,7 @@ npm run build:apk
 ### Logs
 
 Check Metro logs and device logs for debugging:
+
 ```bash
 npx react-native log-android
 ```

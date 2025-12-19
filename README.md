@@ -14,7 +14,7 @@ A personalized learning platform with adaptive content delivery, progress tracki
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - npm or yarn
 
 ### Installation
@@ -47,6 +47,7 @@ SkillSync/
 │   ├── types.ts          # TypeScript types
 │   ├── data.ts           # Data fetching functions
 │   └── store.ts          # Zustand progress store
+│   └── constants.ts      # constants (data temp location)
 ├── data/                  # Content data (JSON files)
 │   └── deep-learning/    # Topic folder
 │       ├── topic.json    # Topic metadata
@@ -61,7 +62,7 @@ SkillSync/
 
 ### Create a New Topic
 
-1. Create a folder in `data/` with your topic ID (e.g., `data/machine-learning/`)
+1. Create a folder in `data/` with your topic ID (e.g., `data/machine-learning/`). You can configure this path here: `lib\constants.ts`
 2. Add a `topic.json` file with topic metadata:
 
 ```json
@@ -152,4 +153,3 @@ SkillSync/
 ## License
 
 MIT
-

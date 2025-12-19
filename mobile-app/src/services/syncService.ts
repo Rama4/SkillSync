@@ -1,7 +1,6 @@
 import {TopicMeta, Lesson} from '../../../lib/types';
 import {TopicsIndex, TopicSummary} from '../../../lib/mobile_types';
 import {databaseService} from './database';
-import RNFS from 'react-native-fs';
 import {
   createNestedFolders,
   getFullPath,
@@ -10,16 +9,15 @@ import {
   getFoldersInDirectory,
 } from '../utils/fsUtils';
 import {PermissionsAndroid, Platform} from 'react-native';
-
-// Configuration for local file system on Android
-// Primary: Download folder, Fallback: App's external directory
-export const DOWNLOAD_DATA_PATH = `${RNFS.DownloadDirectoryPath}/SkillSync/data`;
-const EXTERNAL_DATA_PATH = `${RNFS.ExternalDirectoryPath}/SkillSync/data`;
-const TOPICS_FILE_NAME = 'topics.json';
+import {
+  DOWNLOAD_DATA_PATH,
+  EXTERNAL_DATA_PATH,
+  TOPICS_FILE_NAME,
+} from '../utils/constants';
 
 // Will be set dynamically based on accessibility
-let PUBLIC_DATA_PATH = DOWNLOAD_DATA_PATH;
-let TOPICS_FILE_PATH = `${PUBLIC_DATA_PATH}/${TOPICS_FILE_NAME}`;
+let PublicDataPath = DOWNLOAD_DATA_PATH;
+let TopicsFilePath = `${PublicDataPath}/${TOPICS_FILE_NAME}`;
 
 console.log('Download path:', DOWNLOAD_DATA_PATH);
 console.log('External path:', EXTERNAL_DATA_PATH);
@@ -48,8 +46,8 @@ class SyncService {
       // First try to access Download folder
       await createNestedFolders(DOWNLOAD_DATA_PATH);
       console.log('Using Download folder:', DOWNLOAD_DATA_PATH);
-      PUBLIC_DATA_PATH = DOWNLOAD_DATA_PATH;
-      TOPICS_FILE_PATH = `${PUBLIC_DATA_PATH}/${TOPICS_FILE_NAME}`;
+      PublicDataPath = DOWNLOAD_DATA_PATH;
+      TopicsFilePath = `${PublicDataPath}/${TOPICS_FILE_NAME}`;
 
       return DOWNLOAD_DATA_PATH;
     } catch (error) {
@@ -62,11 +60,11 @@ class SyncService {
         // Fallback to app's external directory
         await createNestedFolders(EXTERNAL_DATA_PATH);
         console.log('Using external directory:', EXTERNAL_DATA_PATH);
-        PUBLIC_DATA_PATH = EXTERNAL_DATA_PATH;
-        TOPICS_FILE_PATH = `${PUBLIC_DATA_PATH}/${TOPICS_FILE_NAME}`;
+        PublicDataPath = EXTERNAL_DATA_PATH;
+        TopicsFilePath = `${PublicDataPath}/${TOPICS_FILE_NAME}`;
 
         // 🔧 Development Mode: Ensure dev data exists
-        await devDataService.ensureDevDataExists(PUBLIC_DATA_PATH);
+        await devDataService.ensureDevDataExists(PublicDataPath);
 
         return EXTERNAL_DATA_PATH;
       } catch (fallbackError) {
@@ -144,15 +142,15 @@ class SyncService {
   async loadTopicsIndex(): Promise<TopicsIndex | null> {
     try {
       // Check if topics.json exists
-      const topicsFileExists = await fileExists(TOPICS_FILE_PATH);
+      const topicsFileExists = await fileExists(TopicsFilePath);
 
       if (topicsFileExists) {
-        console.log('Topics index file exists at:', TOPICS_FILE_PATH);
-        this.topicsIndex = await readJsonFile(TOPICS_FILE_PATH);
+        console.log('Topics index file exists at:', TopicsFilePath);
+        this.topicsIndex = await readJsonFile(TopicsFilePath);
         console.log('Loaded topics index:', this.topicsIndex);
         return this.topicsIndex;
       } else {
-        console.log('Topics index file does not exist at:', TOPICS_FILE_PATH);
+        console.log('Topics index file does not exist at:', TopicsFilePath);
         return null;
       }
     } catch (error) {
@@ -173,7 +171,7 @@ class SyncService {
       } else {
         // Fallback: scan directories in data folder
         console.log('No topics in index, scanning directories...');
-        AVAILABLE_TOPICS = await getFoldersInDirectory(PUBLIC_DATA_PATH);
+        AVAILABLE_TOPICS = await getFoldersInDirectory(PublicDataPath);
         console.log('Scanned topics from directories:', AVAILABLE_TOPICS);
       }
       return AVAILABLE_TOPICS;
@@ -196,7 +194,7 @@ class SyncService {
 
   async fetchTopicData(topicId: string): Promise<TopicMeta> {
     const topicFilePath = getFullPath(
-      getFullPath(PUBLIC_DATA_PATH, topicId),
+      getFullPath(PublicDataPath, topicId),
       'topic.json',
     );
     console.log('Reading topic from:', topicFilePath);
@@ -216,7 +214,7 @@ class SyncService {
 
   async fetchLessonData(topicId: string, lessonId: string): Promise<Lesson> {
     const lessonFilePath = getFullPath(
-      getFullPath(getFullPath(PUBLIC_DATA_PATH, topicId), 'lessons'),
+      getFullPath(getFullPath(PublicDataPath, topicId), 'lessons'),
       `${lessonId}.json`,
     );
     console.log('Reading lesson from:', lessonFilePath);

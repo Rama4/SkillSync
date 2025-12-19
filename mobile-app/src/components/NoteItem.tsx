@@ -54,13 +54,9 @@ const NoteItem: React.FC<NoteItemProps> = ({
               console.error('Audio player error:', error);
               Alert.alert('Playback Error', error);
             }}
+            onDelete={handleDeleteAudio}
             style={styles.audioPlayer}
           />
-          <TouchableOpacity
-            style={styles.deleteAudioButton}
-            onPress={handleDeleteAudio}>
-            <Text style={styles.deleteAudioButtonText}>🗑 Delete Audio</Text>
-          </TouchableOpacity>
         </View>
       )}
 
@@ -112,19 +108,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   audioPlayer: {
-    marginBottom: 8,
-  },
-  deleteAudioButton: {
-    backgroundColor: '#dc2626',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    alignSelf: 'center',
-  },
-  deleteAudioButtonText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '500',
+    marginBottom: 0,
   },
   actions: {
     flexDirection: 'row',

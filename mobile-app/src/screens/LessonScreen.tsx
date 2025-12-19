@@ -18,11 +18,11 @@ import {databaseService} from '../services/database';
 import NotesPanel from '../components/NotesPanel';
 import {fileExists} from '../utils/fsUtils';
 import {DOWNLOAD_DATA_PATH} from '../services/syncService';
+import {API_BASE_URL} from '../utils/constants';
 
 // CONFIGURATION
 // Replace this with your actual API URL (e.g., 'http://localhost:3000' or your production URL)
 // The web app used relative paths ('/api/media'), but RN needs an absolute URL.
-const API_BASE_URL = 'http://10.0.2.2:3000';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Lesson'>;
 
@@ -271,7 +271,11 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
           </TouchableOpacity>
           <Text style={styles.notesTitle}>Notes</Text>
         </View>
-        <NotesPanel topicId={topicId} lessonId={lessonId} />
+        <NotesPanel
+          topicId={topicId}
+          lessonId={lessonId}
+          lessonTitle={lessonTitle}
+        />
       </View>
     );
   }

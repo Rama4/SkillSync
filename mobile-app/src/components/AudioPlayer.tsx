@@ -7,12 +7,14 @@ interface AudioPlayerProps {
   filePath: string;
   onError?: (error: string) => void;
   style?: any;
+  onDelete?: () => void;
 }
 
 const AudioPlayer: React.FC<AudioPlayerProps> = ({
   filePath,
   onError,
   style,
+  onDelete,
 }) => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -203,45 +205,47 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
   return (
     <View style={[styles.container, style]}>
-      {/* Seekable Slider */}
-      <View style={styles.sliderContainer}>
-        <Slider
-          style={styles.slider}
-          value={currentTime}
-          minimumValue={0}
-          maximumValue={duration}
-          onValueChange={onSliderValueChange}
-          onSlidingStart={onSlidingStart}
-          onSlidingComplete={onSlidingComplete}
-          minimumTrackTintColor="#8b5cf6"
-          maximumTrackTintColor="#374151"
-          thumbTintColor="#8b5cf6"
-          disabled={isLoading || duration === 0}
-        />
-      </View>
-
-      {/* Controls Row */}
-      <View style={styles.controlsRow}>
+      {/* Compact Single-Line Layout */}
+      <View style={styles.compactRow}>
         {/* Play/Pause Button */}
         <TouchableOpacity
-          style={styles.button}
+          style={styles.compactButton}
           onPress={onPlayPause}
           disabled={isLoading}>
-          <Text style={styles.buttonText}>{isPlaying ? '⏸️' : '▶️'}</Text>
+          <Text style={styles.compactButtonText}>{isPlaying ? '⏸️' : '▶️'}</Text>
         </TouchableOpacity>
 
-        {/* Stop Button */}
-        <TouchableOpacity
-          style={styles.button}
-          onPress={onStop}
-          disabled={isLoading}>
-          <Text style={styles.buttonText}>⏹️</Text>
-        </TouchableOpacity>
+        {/* Slider */}
+        <View style={styles.compactSliderContainer}>
+          <Slider
+            style={styles.compactSlider}
+            value={currentTime}
+            minimumValue={0}
+            maximumValue={duration}
+            onValueChange={onSliderValueChange}
+            onSlidingStart={onSlidingStart}
+            onSlidingComplete={onSlidingComplete}
+            minimumTrackTintColor="#8b5cf6"
+            maximumTrackTintColor="#374151"
+            thumbTintColor="#8b5cf6"
+            disabled={isLoading || duration === 0}
+          />
+        </View>
 
         {/* Time Display */}
-        <Text style={styles.timeText}>
+        <Text style={styles.compactTimeText}>
           {formatTime(currentTime)} / {formatTime(duration)}
         </Text>
+
+        {/* Delete Button */}
+        {onDelete && (
+          <TouchableOpacity
+            style={styles.compactDeleteButton}
+            onPress={onDelete}
+            disabled={isLoading}>
+            <Text style={styles.compactDeleteButtonText}>🗑</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -251,7 +255,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: '#1a1a1a',
     borderRadius: 12,
-    padding: 16,
+    padding: 12,
     borderWidth: 1,
     borderColor: '#333333',
   },
@@ -260,6 +264,59 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
   },
+  compactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  compactButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#8b5cf6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#8b5cf6',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+  },
+  compactButtonText: {
+    fontSize: 14,
+  },
+  compactSliderContainer: {
+    flex: 1,
+    paddingHorizontal: 4,
+  },
+  compactSlider: {
+    width: '100%',
+    height: 30,
+  },
+  compactTimeText: {
+    color: '#a1a1aa',
+    fontSize: 11,
+    fontFamily: 'monospace',
+    minWidth: 60,
+    textAlign: 'right',
+  },
+  compactDeleteButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#dc2626',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#dc2626',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+  },
+  compactDeleteButtonText: {
+    fontSize: 14,
+  },
+  // Legacy styles kept for backward compatibility (not used in compact mode)
   sliderContainer: {
     marginBottom: 12,
     paddingHorizontal: 4,

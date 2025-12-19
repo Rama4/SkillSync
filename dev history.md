@@ -8,7 +8,7 @@ Right now, in development mode, so we are dropping the db table and re initializ
 
 ### prod build configs:
 
-created a keystore file and placed in android folder
+created a keystore file and placed in android folder using the official React Native guide
 
 created `gradle.properties` file to store the keystore passwords in `~/.gradle` folder.
 
