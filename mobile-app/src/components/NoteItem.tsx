@@ -12,14 +12,7 @@ interface NoteItemProps {
   onDeleteAudio: (noteId: string) => void;
 }
 
-const NoteItem: React.FC<NoteItemProps> = ({
-  note,
-  topicId,
-  lessonId,
-  onEdit,
-  onDelete,
-  onDeleteAudio,
-}) => {
+const NoteItem: React.FC<NoteItemProps> = ({note, topicId, lessonId, onEdit, onDelete, onDeleteAudio}) => {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return (
@@ -61,14 +54,10 @@ const NoteItem: React.FC<NoteItemProps> = ({
       )}
 
       <View style={styles.actions}>
-        <TouchableOpacity
-          style={styles.editButton}
-          onPress={() => onEdit(note)}>
+        <TouchableOpacity style={styles.editButton} onPress={() => onEdit(note)}>
           <Text style={styles.editButtonText}>Edit</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={() => onDelete(note.id)}>
+        <TouchableOpacity style={styles.deleteButton} onPress={() => onDelete(note.id)}>
           <Text style={styles.deleteButtonText}>Delete</Text>
         </TouchableOpacity>
       </View>

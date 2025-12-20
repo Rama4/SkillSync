@@ -10,12 +10,7 @@ interface AudioPlayerProps {
   onDelete?: () => void;
 }
 
-const AudioPlayer: React.FC<AudioPlayerProps> = ({
-  filePath,
-  onError,
-  style,
-  onDelete,
-}) => {
+const AudioPlayer: React.FC<AudioPlayerProps> = ({filePath, onError, style, onDelete}) => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -108,10 +103,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
         // Not playing -> Either resume or start fresh
         const status = await audioRecorder.getStatus();
 
-        if (
-          status.hasPlayer &&
-          status.currentPlaybackPath === filePathRef.current
-        ) {
+        if (status.hasPlayer && status.currentPlaybackPath === filePathRef.current) {
           // Player exists for this file -> Resume
           await audioRecorder.resumePlayback();
         } else {
@@ -208,10 +200,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
       {/* Compact Single-Line Layout */}
       <View style={styles.compactRow}>
         {/* Play/Pause Button */}
-        <TouchableOpacity
-          style={styles.compactButton}
-          onPress={onPlayPause}
-          disabled={isLoading}>
+        <TouchableOpacity style={styles.compactButton} onPress={onPlayPause} disabled={isLoading}>
           <Text style={styles.compactButtonText}>{isPlaying ? '⏸️' : '▶️'}</Text>
         </TouchableOpacity>
 
@@ -239,10 +228,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
         {/* Delete Button */}
         {onDelete && (
-          <TouchableOpacity
-            style={styles.compactDeleteButton}
-            onPress={onDelete}
-            disabled={isLoading}>
+          <TouchableOpacity style={styles.compactDeleteButton} onPress={onDelete} disabled={isLoading}>
             <Text style={styles.compactDeleteButtonText}>🗑</Text>
           </TouchableOpacity>
         )}

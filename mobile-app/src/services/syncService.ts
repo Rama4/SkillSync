@@ -1,19 +1,9 @@
 import {TopicMeta, Lesson} from '../../../lib/types';
 import {TopicsIndex, TopicSummary} from '../../../lib/mobile_types';
 import {databaseService} from './database';
-import {
-  createNestedFolders,
-  getFullPath,
-  fileExists,
-  readJsonFile,
-  getFoldersInDirectory,
-} from '../utils/fsUtils';
+import {getFullPath, isFileOrFolderExists, readJsonFile, getFoldersInDirectory} from '../utils/fsUtils';
 import {PermissionsAndroid, Platform} from 'react-native';
-import {
-  DOWNLOAD_DATA_PATH,
-  EXTERNAL_DATA_PATH,
-  TOPICS_FILE_NAME,
-} from '../utils/constants';
+import {DOWNLOAD_DATA_PATH, EXTERNAL_DATA_PATH, TOPICS_FILE_NAME} from '../utils/constants';
 
 // Will be set dynamically based on accessibility
 let PublicDataPath = DOWNLOAD_DATA_PATH;
@@ -44,35 +34,27 @@ class SyncService {
   async findAccessibleDataPath(): Promise<string> {
     try {
       // First try to access Download folder
-      await createNestedFolders(DOWNLOAD_DATA_PATH);
-      console.log('Using Download folder:', DOWNLOAD_DATA_PATH);
-      PublicDataPath = DOWNLOAD_DATA_PATH;
-      TopicsFilePath = `${PublicDataPath}/${TOPICS_FILE_NAME}`;
-
-      return DOWNLOAD_DATA_PATH;
-    } catch (error) {
-      console.log(
-        'Download folder not accessible, trying external directory:',
-        error.message,
-      );
-
-      try {
-        // Fallback to app's external directory
-        await createNestedFolders(EXTERNAL_DATA_PATH);
-        console.log('Using external directory:', EXTERNAL_DATA_PATH);
-        PublicDataPath = EXTERNAL_DATA_PATH;
+      const downloadFolderExists = await isFileOrFolderExists(DOWNLOAD_DATA_PATH);
+      if (downloadFolderExists) {
+        console.log('Using Download folder:', DOWNLOAD_DATA_PATH);
+        PublicDataPath = DOWNLOAD_DATA_PATH;
         TopicsFilePath = `${PublicDataPath}/${TOPICS_FILE_NAME}`;
-
-        // 🔧 Development Mode: Ensure dev data exists
-        await devDataService.ensureDevDataExists(PublicDataPath);
-
-        return EXTERNAL_DATA_PATH;
-      } catch (fallbackError) {
-        console.error('Both paths failed:', fallbackError);
-        throw new Error(
-          `Cannot access any storage location: ${fallbackError.message}`,
-        );
+      } else {
+        // try external directory
+        const externalFolderExists = await isFileOrFolderExists(EXTERNAL_DATA_PATH);
+        if (externalFolderExists) {
+          console.log('Using external directory:', EXTERNAL_DATA_PATH);
+          PublicDataPath = EXTERNAL_DATA_PATH;
+          TopicsFilePath = `${PublicDataPath}/${TOPICS_FILE_NAME}`;
+        } else {
+          console.error('No accessible data path found in: ' + EXTERNAL_DATA_PATH + ' or ' + DOWNLOAD_DATA_PATH);
+          throw new Error('No accessible data path found: ' + EXTERNAL_DATA_PATH + ' or ' + DOWNLOAD_DATA_PATH);
+        }
       }
+      return PublicDataPath;
+    } catch (error) {
+      console.error('Failed to find accessible data path:', error);
+      throw new Error('Failed to find accessible data path: ' + error.message);
     }
   }
 
@@ -104,11 +86,9 @@ class SyncService {
       const granted = await PermissionsAndroid.requestMultiple(permissions);
 
       const readGranted =
-        granted[PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE] ===
-        PermissionsAndroid.RESULTS.GRANTED;
+        granted[PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE] === PermissionsAndroid.RESULTS.GRANTED;
       const writeGranted =
-        granted[PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE] ===
-        PermissionsAndroid.RESULTS.GRANTED;
+        granted[PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE] === PermissionsAndroid.RESULTS.GRANTED;
 
       if (readGranted && writeGranted) {
         console.log('Storage permissions granted');
@@ -142,7 +122,7 @@ class SyncService {
   async loadTopicsIndex(): Promise<TopicsIndex | null> {
     try {
       // Check if topics.json exists
-      const topicsFileExists = await fileExists(TopicsFilePath);
+      const topicsFileExists = await isFileOrFolderExists(TopicsFilePath);
 
       if (topicsFileExists) {
         console.log('Topics index file exists at:', TopicsFilePath);
@@ -193,14 +173,11 @@ class SyncService {
   }
 
   async fetchTopicData(topicId: string): Promise<TopicMeta> {
-    const topicFilePath = getFullPath(
-      getFullPath(PublicDataPath, topicId),
-      'topic.json',
-    );
+    const topicFilePath = getFullPath(getFullPath(PublicDataPath, topicId), 'topic.json');
     console.log('Reading topic from:', topicFilePath);
 
     try {
-      const exists = await fileExists(topicFilePath);
+      const exists = await isFileOrFolderExists(topicFilePath);
       if (!exists) {
         throw new Error(`Topic file not found: ${topicFilePath}`);
       }
@@ -220,7 +197,7 @@ class SyncService {
     console.log('Reading lesson from:', lessonFilePath);
 
     try {
-      const exists = await fileExists(lessonFilePath);
+      const exists = await isFileOrFolderExists(lessonFilePath);
       if (!exists) {
         throw new Error(`Lesson file not found: ${lessonFilePath}`);
       }
@@ -243,9 +220,7 @@ class SyncService {
       // Request storage permission first
       const hasPermission = await this.requestStoragePermission();
       if (!hasPermission) {
-        throw new Error(
-          'Storage permission is required to access files in Download folder',
-        );
+        throw new Error('Storage permission is required to access files in Download folder');
       }
 
       // Ensure folder structure exists
@@ -295,10 +270,7 @@ class SyncService {
         // Read and save lessons
         for (const lessonMeta of topicData.lessons) {
           try {
-            const lessonData = await this.fetchLessonData(
-              topicData.id,
-              lessonMeta.id,
-            );
+            const lessonData = await this.fetchLessonData(topicData.id, lessonMeta.id);
             await databaseService.saveLesson(lessonData);
             currentItem++;
             this.updateStatus({
@@ -362,9 +334,7 @@ class SyncService {
 
       // Check each topic in the index
       for (const topicSummary of topicsIndex.topics) {
-        const localVersion = await databaseService.getTopicVersion(
-          topicSummary.id,
-        );
+        const localVersion = await databaseService.getTopicVersion(topicSummary.id);
 
         if (!localVersion) {
           // Topic doesn't exist locally - it's new
@@ -373,15 +343,11 @@ class SyncService {
           // Version mismatch - topic has been updated
           updatedTopics.push(topicSummary);
           // Mark as outdated in database
-          await databaseService.updateTopicSyncStatus(
-            topicSummary.id,
-            'outdated',
-          );
+          await databaseService.updateTopicSyncStatus(topicSummary.id, 'outdated');
         }
       }
 
-      const hasUpdates =
-        indexUpdated || updatedTopics.length > 0 || newTopics.length > 0;
+      const hasUpdates = indexUpdated || updatedTopics.length > 0 || newTopics.length > 0;
 
       return {
         hasUpdates,

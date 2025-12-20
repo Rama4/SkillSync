@@ -1,14 +1,5 @@
 import React, {useState, useEffect, useCallback} from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-  ScrollView,
-} from 'react-native';
+import {View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, ScrollView} from 'react-native';
 import {Note} from '../../../lib/types';
 import {notesService} from '../services/notesService';
 import {audioRecorder} from '../native/AudioRecorder';
@@ -23,21 +14,12 @@ interface NoteEditorProps {
   onCancel: () => void;
 }
 
-const NoteEditor: React.FC<NoteEditorProps> = ({
-  note,
-  topicId,
-  lessonId,
-  lessonTitle = '',
-  onSave,
-  onCancel,
-}) => {
+const NoteEditor: React.FC<NoteEditorProps> = ({note, topicId, lessonId, lessonTitle = '', onSave, onCancel}) => {
   const [title, setTitle] = useState(note?.title || '');
   const [markdown, setMarkdown] = useState(note?.markdown || '');
   const [isRecording, setIsRecording] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [audioPath, setAudioPath] = useState<string | null>(
-    note?.audioFile || null,
-  );
+  const [audioPath, setAudioPath] = useState<string | null>(note?.audioFile || null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
 
@@ -101,8 +83,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
       console.error('Error starting recording:', error);
       Alert.alert(
         'Recording Error',
-        error.message ||
-          'Failed to start recording. Please check microphone permissions.',
+        error.message || 'Failed to start recording. Please check microphone permissions.',
       );
     }
   }, []);
@@ -129,42 +110,36 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
   }, [isRecording]);
 
   const deleteAudio = useCallback(() => {
-    Alert.alert(
-      'Delete Audio',
-      'Are you sure you want to delete the audio recording?',
-      [
-        {text: 'Cancel', style: 'cancel'},
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            if (isPlaying) {
-              await audioRecorder.stopPlayback();
-            }
+    Alert.alert('Delete Audio', 'Are you sure you want to delete the audio recording?', [
+      {text: 'Cancel', style: 'cancel'},
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          if (isPlaying) {
+            await audioRecorder.stopPlayback();
+          }
 
-            if (audioPath) {
-              try {
-                await audioRecorder.deleteFile(audioPath);
-              } catch (error) {
-                console.error('Error deleting audio file:', error);
-              }
+          if (audioPath) {
+            try {
+              await audioRecorder.deleteFile(audioPath);
+            } catch (error) {
+              console.error('Error deleting audio file:', error);
             }
+          }
 
-            setAudioPath(null);
-            setIsPlaying(false);
-          },
+          setAudioPath(null);
+          setIsPlaying(false);
         },
-      ],
-    );
+      },
+    ]);
   }, [audioPath, isPlaying]);
 
   const generateAudioNoteTitle = useCallback((): string => {
     const existingNotes = notesService.getNotes(topicId, lessonId);
     const audioNotes = existingNotes.filter(n => n.audioFile);
     const recordingNumber = audioNotes.length + 1;
-    return lessonTitle
-      ? `${lessonTitle} ${recordingNumber}`
-      : `Recording ${recordingNumber}`;
+    return lessonTitle ? `${lessonTitle} ${recordingNumber}` : `Recording ${recordingNumber}`;
   }, [topicId, lessonId, lessonTitle]);
 
   const handleSave = async () => {
@@ -210,9 +185,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>
-          {note ? 'Edit Note' : 'New Note'}
-        </Text>
+        <Text style={styles.headerTitle}>{note ? 'Edit Note' : 'New Note'}</Text>
         <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
           <Text style={styles.cancelButtonText}>✕</Text>
         </TouchableOpacity>
@@ -256,12 +229,8 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
                   Alert.alert('Playback Error', error);
                 }}
               />
-              <TouchableOpacity
-                style={styles.deleteAudioButton}
-                onPress={deleteAudio}>
-                <Text style={styles.deleteAudioButtonText}>
-                  🗑 Delete Recording
-                </Text>
+              <TouchableOpacity style={styles.deleteAudioButton} onPress={deleteAudio}>
+                <Text style={styles.deleteAudioButtonText}>🗑 Delete Recording</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -272,9 +241,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
               <View style={styles.recordingHeader}>
                 <View style={styles.recordingIndicator}>
                   <View style={styles.recordingDot} />
-                  <Text style={styles.recordingText}>
-                    Recording: {formatDuration(recordingDuration)}
-                  </Text>
+                  <Text style={styles.recordingText}>Recording: {formatDuration(recordingDuration)}</Text>
                 </View>
               </View>
             </View>
@@ -284,24 +251,17 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
           <View style={styles.recordingControls}>
             {!isRecording ? (
               <TouchableOpacity
-                style={[
-                  styles.recordButton,
-                  audioPath && styles.recordButtonSecondary,
-                ]}
+                style={[styles.recordButton, audioPath && styles.recordButtonSecondary]}
                 onPress={startRecording}>
                 <View style={styles.recordButtonContent}>
                   <View style={styles.micIcon}>
                     <Text style={styles.micIconText}>🎤</Text>
                   </View>
-                  <Text style={styles.recordButtonText}>
-                    {audioPath ? 'Record New' : 'Start Recording'}
-                  </Text>
+                  <Text style={styles.recordButtonText}>{audioPath ? 'Record New' : 'Start Recording'}</Text>
                 </View>
               </TouchableOpacity>
             ) : (
-              <TouchableOpacity
-                style={[styles.recordButton, styles.stopButton]}
-                onPress={stopRecording}>
+              <TouchableOpacity style={[styles.recordButton, styles.stopButton]} onPress={stopRecording}>
                 <View style={styles.recordButtonContent}>
                   <View style={styles.stopIcon}>
                     <Text style={styles.stopIconText}>⏹</Text>
@@ -325,9 +285,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.cancelActionButton}
-            onPress={onCancel}>
+          <TouchableOpacity style={styles.cancelActionButton} onPress={onCancel}>
             <Text style={styles.cancelActionButtonText}>Cancel</Text>
           </TouchableOpacity>
         </View>

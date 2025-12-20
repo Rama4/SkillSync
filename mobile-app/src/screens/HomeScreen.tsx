@@ -1,13 +1,5 @@
 import React, {useState, useEffect} from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  ActivityIndicator,
-  Alert,
-} from 'react-native';
+import {View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Alert} from 'react-native';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {TopicMeta} from '../../../lib/types';
 import {RootStackParamList} from '../../../lib/mobile_types';
@@ -62,10 +54,7 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
       await loadTopics();
     } catch (error) {
       console.error('Initial sync failed:', error);
-      Alert.alert(
-        'Sync Failed',
-        'Failed to download content. Please check your internet connection and try again.',
-      );
+      Alert.alert('Sync Failed', 'Failed to download content. Please check your internet connection and try again.');
     } finally {
       setIsLoading(false);
     }
@@ -105,16 +94,12 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.content}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>📚 SkillSync</Text>
           <Text style={styles.subtitle}>Choose a topic to start learning</Text>
-          <TouchableOpacity
-            style={styles.settingsButton}
-            onPress={goToSettings}>
+          <TouchableOpacity style={styles.settingsButton} onPress={goToSettings}>
             <Text style={styles.settingsButtonText}>⚙️ Settings</Text>
           </TouchableOpacity>
         </View>
@@ -132,17 +117,12 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
           <View>
             <Text style={styles.sectionTitle}>Available Topics</Text>
             {topics.map(topic => (
-              <TouchableOpacity
-                key={topic.id}
-                style={styles.topicCard}
-                onPress={() => navigateToTopic(topic)}>
+              <TouchableOpacity key={topic.id} style={styles.topicCard} onPress={() => navigateToTopic(topic)}>
                 <View style={styles.topicHeader}>
                   <Text style={styles.topicIcon}>{topic.icon}</Text>
                   <View style={styles.topicInfo}>
                     <Text style={styles.topicTitle}>{topic.title}</Text>
-                    <Text style={styles.topicDescription}>
-                      {topic.description}
-                    </Text>
+                    <Text style={styles.topicDescription}>{topic.description}</Text>
                   </View>
                 </View>
                 <View style={styles.topicMeta}>
@@ -162,9 +142,8 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateTitle}>No Content Available</Text>
             <Text style={styles.emptyStateText}>
-              No learning content found. Make sure your content is in
-              Download/SkillSync/data/ folder, then go to Settings to load
-              content.
+              No learning content found. Make sure your content is in Download/SkillSync/data/ folder, then go to
+              Settings to load content.
             </Text>
             <TouchableOpacity style={styles.button} onPress={goToSettings}>
               <Text style={styles.buttonText}>Go to Settings</Text>

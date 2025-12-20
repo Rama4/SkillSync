@@ -1,14 +1,5 @@
 import React, {useState, useEffect, useCallback} from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  ActivityIndicator,
-  Alert,
-  Dimensions,
-} from 'react-native';
+import {View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Alert, Dimensions} from 'react-native';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import Markdown from 'react-native-markdown-display';
 import Video from 'react-native-video';
@@ -16,8 +7,8 @@ import {RootStackParamList} from '../../../lib/mobile_types';
 import {LessonSection, Lesson} from '../../../lib/types';
 import {databaseService} from '../services/database';
 import NotesPanel from '../components/NotesPanel';
-import {fileExists} from '../utils/fsUtils';
-import {DOWNLOAD_DATA_PATH} from '../services/syncService';
+import {isFileOrFolderExists} from '../utils/fsUtils';
+import {DOWNLOAD_DATA_PATH} from '../utils/constants';
 import {API_BASE_URL} from '../utils/constants';
 
 // CONFIGURATION
@@ -40,16 +31,13 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
 
   const [showNotes, setShowNotes] = useState(false);
 
-  const currentSection: LessonSection | undefined =
-    lesson?.sections[currentSectionIndex];
+  const currentSection: LessonSection | undefined = lesson?.sections[currentSectionIndex];
   const isFirstSection = currentSectionIndex === 0;
-  const isLastSection =
-    currentSectionIndex === (lesson?.sections?.length ?? 0) - 1;
+  const isLastSection = currentSectionIndex === (lesson?.sections?.length ?? 0) - 1;
 
   // Determine if this section is a video type
   const isVideoSection =
-    currentSection?.type === 'video' ||
-    (currentSection?.fileType === 'video' && !!currentSection?.filePath);
+    currentSection?.type === 'video' || (currentSection?.fileType === 'video' && !!currentSection?.filePath);
 
   useEffect(() => {
     loadLessonData();
@@ -90,10 +78,7 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
     }
 
     // Case 2: Markdown file needs fetching
-    if (
-      (section.type === 'markdown' || section.fileType === 'markdown') &&
-      section.filePath
-    ) {
+    if ((section.type === 'markdown' || section.fileType === 'markdown') && section.filePath) {
       setIsLoadingContent(true);
       const mediaUrl = `${API_BASE_URL}/api/media/${topicId}/${section.filePath}`;
 
@@ -122,7 +107,7 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
         }
         console.log('rendering video: path=', _videoUrl);
         // check if path exists
-        const topicsFileExists = await fileExists(_videoUrl);
+        const topicsFileExists = await isFileOrFolderExists(_videoUrl);
         if (topicsFileExists) {
           console.log('video url exists');
           setVideoUrl(_videoUrl);
@@ -264,18 +249,12 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
     return (
       <View style={styles.container}>
         <View style={styles.notesHeader}>
-          <TouchableOpacity
-            style={styles.backToLessonButton}
-            onPress={() => setShowNotes(false)}>
+          <TouchableOpacity style={styles.backToLessonButton} onPress={() => setShowNotes(false)}>
             <Text style={styles.backToLessonButtonText}>← Back to Lesson</Text>
           </TouchableOpacity>
           <Text style={styles.notesTitle}>Notes</Text>
         </View>
-        <NotesPanel
-          topicId={topicId}
-          lessonId={lessonId}
-          lessonTitle={lessonTitle}
-        />
+        <NotesPanel topicId={topicId} lessonId={lessonId} lessonTitle={lessonTitle} />
       </View>
     );
   }
@@ -290,9 +269,7 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
           </Text>
           <Text style={styles.sectionTitle}>{currentSection?.title}</Text>
         </View>
-        <TouchableOpacity
-          style={styles.notesButton}
-          onPress={() => setShowNotes(true)}>
+        <TouchableOpacity style={styles.notesButton} onPress={() => setShowNotes(true)}>
           <Text style={styles.notesButtonText}>📝 Notes</Text>
         </TouchableOpacity>
         <View style={styles.progressBar}>
@@ -300,9 +277,7 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
             style={[
               styles.progressFill,
               {
-                width: `${
-                  ((currentSectionIndex + 1) / lesson.sections.length) * 100
-                }%`,
+                width: `${((currentSectionIndex + 1) / lesson.sections.length) * 100}%`,
               },
             ]}
           />
@@ -310,9 +285,7 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
       </View>
 
       {/* Section Content */}
-      <ScrollView
-        style={styles.contentContainer}
-        contentContainerStyle={styles.content}>
+      <ScrollView style={styles.contentContainer} contentContainerStyle={styles.content}>
         <View style={styles.flashCard}>
           <Text style={styles.flashCardTitle}>{currentSection?.title}</Text>
 
@@ -334,11 +307,7 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
 
           {/* Markdown Content (Dynamically loaded or Static) */}
           {isLoadingContent ? (
-            <ActivityIndicator
-              size="small"
-              color="#8b5cf6"
-              style={{marginTop: 20}}
-            />
+            <ActivityIndicator size="small" color="#8b5cf6" style={{marginTop: 20}} />
           ) : (
             <Markdown style={markdownStyles}>{dynamicContent}</Markdown>
           )}
@@ -351,23 +320,14 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
           style={[styles.navButton, isFirstSection && styles.navButtonDisabled]}
           onPress={goToPreviousSection}
           disabled={isFirstSection}>
-          <Text
-            style={[
-              styles.navButtonText,
-              isFirstSection && styles.navButtonTextDisabled,
-            ]}>
-            ← Previous
-          </Text>
+          <Text style={[styles.navButtonText, isFirstSection && styles.navButtonTextDisabled]}>← Previous</Text>
         </TouchableOpacity>
 
         <View style={styles.sectionIndicators}>
           {lesson.sections.map((_, index) => (
             <TouchableOpacity
               key={index}
-              style={[
-                styles.sectionDot,
-                index === currentSectionIndex && styles.sectionDotActive,
-              ]}
+              style={[styles.sectionDot, index === currentSectionIndex && styles.sectionDotActive]}
               onPress={() => goToSection(index)}
             />
           ))}
@@ -377,13 +337,7 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
           style={[styles.navButton, isLastSection && styles.navButtonDisabled]}
           onPress={goToNextSection}
           disabled={isLastSection}>
-          <Text
-            style={[
-              styles.navButtonText,
-              isLastSection && styles.navButtonTextDisabled,
-            ]}>
-            Next →
-          </Text>
+          <Text style={[styles.navButtonText, isLastSection && styles.navButtonTextDisabled]}>Next →</Text>
         </TouchableOpacity>
       </View>
     </View>

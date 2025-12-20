@@ -1,13 +1,5 @@
 import React, {useState, useEffect} from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-} from 'react-native';
+import {View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIndicator} from 'react-native';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../../../lib/mobile_types';
 import {syncService, SyncStatus} from '../services/syncService';
@@ -16,9 +8,7 @@ import {databaseService} from '../services/database';
 type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
 
 const SettingsScreen: React.FC<Props> = ({navigation}) => {
-  const [syncStatus, setSyncStatus] = useState<SyncStatus>(
-    syncService.getSyncStatus(),
-  );
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>(syncService.getSyncStatus());
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
   const [topicsCount, setTopicsCount] = useState(0);
 
@@ -60,9 +50,7 @@ const SettingsScreen: React.FC<Props> = ({navigation}) => {
     try {
       const updateInfo = await syncService.checkForUpdates();
       if (updateInfo.hasUpdates) {
-        const updatedNames = updateInfo.updatedTopics
-          .map(t => t.title)
-          .join(', ');
+        const updatedNames = updateInfo.updatedTopics.map(t => t.title).join(', ');
         const newNames = updateInfo.newTopics.map(t => t.title).join(', ');
 
         let message = '';
@@ -94,27 +82,23 @@ const SettingsScreen: React.FC<Props> = ({navigation}) => {
   };
 
   const handleClearData = () => {
-    Alert.alert(
-      'Clear All Data',
-      'This will delete all downloaded content. Are you sure?',
-      [
-        {text: 'Cancel', style: 'cancel'},
-        {
-          text: 'Clear',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await databaseService.clearAllData();
-              await loadSyncInfo();
-              Alert.alert('Success', 'All data cleared successfully!');
-            } catch (error) {
-              console.error('Failed to clear data:', error);
-              Alert.alert('Error', 'Failed to clear data.');
-            }
-          },
+    Alert.alert('Clear All Data', 'This will delete all downloaded content. Are you sure?', [
+      {text: 'Cancel', style: 'cancel'},
+      {
+        text: 'Clear',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await databaseService.clearAllData();
+            await loadSyncInfo();
+            Alert.alert('Success', 'All data cleared successfully!');
+          } catch (error) {
+            console.error('Failed to clear data:', error);
+            Alert.alert('Error', 'Failed to clear data.');
+          }
         },
-      ],
-    );
+      },
+    ]);
   };
 
   const showInfo = () => {
@@ -131,9 +115,7 @@ const SettingsScreen: React.FC<Props> = ({navigation}) => {
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.content}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>⚙️ Settings</Text>
@@ -153,42 +135,29 @@ const SettingsScreen: React.FC<Props> = ({navigation}) => {
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Source Path:</Text>
-            <Text style={styles.infoValue}>
-              Download/SkillSync/data/ (or app external)
-            </Text>
+            <Text style={styles.infoValue}>Download/SkillSync/data/ (or app external)</Text>
           </View>
 
           {syncStatus.isLoading && (
             <View style={styles.syncProgress}>
               <ActivityIndicator size="small" color="#8b5cf6" />
               <Text style={styles.syncProgressText}>
-                Loading... ({syncStatus.progress.current}/
-                {syncStatus.progress.total})
+                Loading... ({syncStatus.progress.current}/{syncStatus.progress.total})
               </Text>
             </View>
           )}
 
-          {syncStatus.error && (
-            <Text style={styles.errorText}>{syncStatus.error}</Text>
-          )}
+          {syncStatus.error && <Text style={styles.errorText}>{syncStatus.error}</Text>}
 
           <View style={styles.buttonRow}>
             <TouchableOpacity
-              style={[
-                styles.button,
-                styles.primaryButton,
-                syncStatus.isLoading && styles.buttonDisabled,
-              ]}
+              style={[styles.button, styles.primaryButton, syncStatus.isLoading && styles.buttonDisabled]}
               onPress={handleSyncData}
               disabled={syncStatus.isLoading}>
               <Text style={styles.buttonText}>📁 Load All Content</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[
-                styles.button,
-                styles.secondaryButton,
-                syncStatus.isLoading && styles.buttonDisabled,
-              ]}
+              style={[styles.button, styles.secondaryButton, syncStatus.isLoading && styles.buttonDisabled]}
               onPress={handleCheckUpdates}
               disabled={syncStatus.isLoading}>
               <Text style={styles.buttonText}>🔍 Check for Updates</Text>
@@ -199,12 +168,8 @@ const SettingsScreen: React.FC<Props> = ({navigation}) => {
         {/* Data Management */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>🗄️ Data Management</Text>
-          <Text style={styles.cardText}>
-            Manage your downloaded content and app data.
-          </Text>
-          <TouchableOpacity
-            style={[styles.button, styles.dangerButton]}
-            onPress={handleClearData}>
+          <Text style={styles.cardText}>Manage your downloaded content and app data.</Text>
+          <TouchableOpacity style={[styles.button, styles.dangerButton]} onPress={handleClearData}>
             <Text style={styles.buttonText}>🗑️ Clear All Data</Text>
           </TouchableOpacity>
         </View>
@@ -222,9 +187,7 @@ const SettingsScreen: React.FC<Props> = ({navigation}) => {
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Storage:</Text>
-            <Text style={styles.infoValueSuccess}>
-              SQLite (Offline-first) ✅
-            </Text>
+            <Text style={styles.infoValueSuccess}>SQLite (Offline-first) ✅</Text>
           </View>
           <TouchableOpacity style={styles.infoButton} onPress={showInfo}>
             <Text style={styles.buttonText}>📱 About SkillSync</Text>

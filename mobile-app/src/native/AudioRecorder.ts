@@ -1,9 +1,4 @@
-import {
-  NativeModules,
-  NativeEventEmitter,
-  Platform,
-  PermissionsAndroid,
-} from 'react-native';
+import {NativeModules, NativeEventEmitter, Platform, PermissionsAndroid} from 'react-native';
 
 // Types for the native module
 export interface RecordingOptions {
@@ -104,32 +99,23 @@ class AudioRecorder {
   private setupEventListeners() {
     // Recording progress events
     this.subscriptions.push(
-      eventEmitter.addListener(
-        'onRecordingProgress',
-        (event: RecordingProgressEvent) => {
-          this.progressListeners.forEach(listener => listener(event));
-        },
-      ),
+      eventEmitter.addListener('onRecordingProgress', (event: RecordingProgressEvent) => {
+        this.progressListeners.forEach(listener => listener(event));
+      }),
     );
 
     // Playback complete events
     this.subscriptions.push(
-      eventEmitter.addListener(
-        'onPlaybackComplete',
-        (event: PlaybackCompleteEvent) => {
-          this.completeListeners.forEach(listener => listener(event));
-        },
-      ),
+      eventEmitter.addListener('onPlaybackComplete', (event: PlaybackCompleteEvent) => {
+        this.completeListeners.forEach(listener => listener(event));
+      }),
     );
 
     // Playback error events
     this.subscriptions.push(
-      eventEmitter.addListener(
-        'onPlaybackError',
-        (event: PlaybackErrorEvent) => {
-          this.errorListeners.forEach(listener => listener(event));
-        },
-      ),
+      eventEmitter.addListener('onPlaybackError', (event: PlaybackErrorEvent) => {
+        this.errorListeners.forEach(listener => listener(event));
+      }),
     );
   }
 
@@ -144,17 +130,13 @@ class AudioRecorder {
     }
 
     try {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
-        {
-          title: 'Microphone Permission',
-          message:
-            'SkillSync needs access to your microphone to record voice notes.',
-          buttonNeutral: 'Ask Me Later',
-          buttonNegative: 'Cancel',
-          buttonPositive: 'OK',
-        },
-      );
+      const granted = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO, {
+        title: 'Microphone Permission',
+        message: 'SkillSync needs access to your microphone to record voice notes.',
+        buttonNeutral: 'Ask Me Later',
+        buttonNegative: 'Cancel',
+        buttonPositive: 'OK',
+      });
       return granted === PermissionsAndroid.RESULTS.GRANTED;
     } catch (err) {
       console.error('Permission request error:', err);
@@ -186,9 +168,7 @@ class AudioRecorder {
    * @param options - Recording configuration options
    * @returns Promise<RecordingResult>
    */
-  async startRecording(
-    options: RecordingOptions = {},
-  ): Promise<RecordingResult> {
+  async startRecording(options: RecordingOptions = {}): Promise<RecordingResult> {
     // Check permission first
     const hasPermission = await this.checkPermission();
     if (!hasPermission) {

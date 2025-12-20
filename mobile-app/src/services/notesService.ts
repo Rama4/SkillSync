@@ -20,10 +20,7 @@ class NotesService {
       }
 
       const notes: Note[] = JSON.parse(notesJson);
-      return notes.sort(
-        (a, b) =>
-          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-      );
+      return notes.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
     } catch (error) {
       console.error('Error loading notes:', error);
       return [];
@@ -64,11 +61,7 @@ class NotesService {
     }
   }
 
-  deleteNoteAudio(
-    topicId: string,
-    lessonId: string,
-    noteId: string,
-  ): Note | null {
+  deleteNoteAudio(topicId: string, lessonId: string, noteId: string): Note | null {
     try {
       const key = this.getNotesKey(topicId, lessonId);
       const existingNotes = this.getNotes(topicId, lessonId);
@@ -104,10 +97,7 @@ class NotesService {
         return {topicId, lessonId, notes};
       });
 
-      return allNotes.filter(
-        (item: {topicId: string; lessonId: string; notes: Note[]}) =>
-          item.notes.length > 0,
-      );
+      return allNotes.filter((item: {topicId: string; lessonId: string; notes: Note[]}) => item.notes.length > 0);
     } catch (error) {
       console.error('Error loading all notes:', error);
       return [];

@@ -1,13 +1,5 @@
 import React, {useState, useEffect} from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  ActivityIndicator,
-  Alert,
-} from 'react-native';
+import {View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Alert} from 'react-native';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../../../lib/mobile_types';
 import {TopicMeta, Lesson} from '../../../lib/types';
@@ -93,9 +85,7 @@ const TopicScreen: React.FC<Props> = ({navigation, route}) => {
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.content}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
         {/* Topic Header */}
         {topic && (
           <View style={styles.topicHeader}>
@@ -121,10 +111,7 @@ const TopicScreen: React.FC<Props> = ({navigation, route}) => {
           <View>
             <Text style={styles.sectionTitle}>Lessons ({lessons.length})</Text>
             {lessons.map((lesson, index) => (
-              <TouchableOpacity
-                key={lesson.id}
-                style={styles.lessonCard}
-                onPress={() => navigateToLesson(lesson)}>
+              <TouchableOpacity key={lesson.id} style={styles.lessonCard} onPress={() => navigateToLesson(lesson)}>
                 <View style={styles.lessonHeader}>
                   <View style={styles.lessonNumber}>
                     <Text style={styles.lessonNumberText}>{index + 1}</Text>
@@ -134,14 +121,8 @@ const TopicScreen: React.FC<Props> = ({navigation, route}) => {
                     <View style={styles.lessonMeta}>
                       <Text style={styles.duration}>⏱️ {lesson.duration}</Text>
                       <View style={styles.difficulty}>
-                        <Text style={styles.difficultyIcon}>
-                          {getDifficultyIcon(lesson.difficulty)}
-                        </Text>
-                        <Text
-                          style={[
-                            styles.difficultyText,
-                            {color: getDifficultyColor(lesson.difficulty)},
-                          ]}>
+                        <Text style={styles.difficultyIcon}>{getDifficultyIcon(lesson.difficulty)}</Text>
+                        <Text style={[styles.difficultyText, {color: getDifficultyColor(lesson.difficulty)}]}>
                           {lesson.difficulty}
                         </Text>
                       </View>
@@ -164,8 +145,7 @@ const TopicScreen: React.FC<Props> = ({navigation, route}) => {
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateTitle}>No Lessons Available</Text>
             <Text style={styles.emptyStateText}>
-              No lessons found for this topic. The content might not be
-              downloaded yet.
+              No lessons found for this topic. The content might not be downloaded yet.
             </Text>
           </View>
         )}

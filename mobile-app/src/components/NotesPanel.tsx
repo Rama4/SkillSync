@@ -1,13 +1,5 @@
 import React, {useState, useEffect, useCallback} from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  ActivityIndicator,
-  Alert,
-} from 'react-native';
+import {View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Alert} from 'react-native';
 import {Note} from '../../../lib/types';
 import {notesService} from '../services/notesService';
 import {audioRecorder} from '../native/AudioRecorder';
@@ -20,11 +12,7 @@ interface NotesPanelProps {
   lessonTitle?: string;
 }
 
-const NotesPanel: React.FC<NotesPanelProps> = ({
-  topicId,
-  lessonId,
-  lessonTitle = '',
-}) => {
+const NotesPanel: React.FC<NotesPanelProps> = ({topicId, lessonId, lessonTitle = ''}) => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
@@ -96,8 +84,7 @@ const NotesPanel: React.FC<NotesPanelProps> = ({
       console.error('Error starting quick recording:', error);
       Alert.alert(
         'Recording Error',
-        error.message ||
-          'Failed to start recording. Please check microphone permissions.',
+        error.message || 'Failed to start recording. Please check microphone permissions.',
       );
     }
   }, []);
@@ -172,26 +159,22 @@ const NotesPanel: React.FC<NotesPanelProps> = ({
   };
 
   const handleDeleteAudio = async (noteId: string) => {
-    Alert.alert(
-      'Delete Audio',
-      'Are you sure you want to delete the audio recording? The text note will be kept.',
-      [
-        {text: 'Cancel', style: 'cancel'},
-        {
-          text: 'Delete Audio',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await notesService.deleteNoteAudio(topicId, lessonId, noteId);
-              loadNotes();
-            } catch (error) {
-              console.error('Error deleting audio:', error);
-              Alert.alert('Error', 'Failed to delete audio');
-            }
-          },
+    Alert.alert('Delete Audio', 'Are you sure you want to delete the audio recording? The text note will be kept.', [
+      {text: 'Cancel', style: 'cancel'},
+      {
+        text: 'Delete Audio',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await notesService.deleteNoteAudio(topicId, lessonId, noteId);
+            loadNotes();
+          } catch (error) {
+            console.error('Error deleting audio:', error);
+            Alert.alert('Error', 'Failed to delete audio');
+          }
         },
-      ],
-    );
+      },
+    ]);
   };
 
   const handleNewNote = () => {
@@ -221,18 +204,12 @@ const NotesPanel: React.FC<NotesPanelProps> = ({
         <Text style={styles.title}>Notes</Text>
         <View style={styles.headerButtons}>
           {isQuickRecording ? (
-            <TouchableOpacity
-              style={styles.stopRecordingButton}
-              onPress={stopQuickRecording}>
-              <Text style={styles.stopRecordingButtonText}>
-                ⏹ Stop ({formatDuration(recordingDuration)})
-              </Text>
+            <TouchableOpacity style={styles.stopRecordingButton} onPress={stopQuickRecording}>
+              <Text style={styles.stopRecordingButtonText}>⏹ Stop ({formatDuration(recordingDuration)})</Text>
             </TouchableOpacity>
           ) : (
             <>
-              <TouchableOpacity
-                style={styles.quickRecordButton}
-                onPress={handleQuickRecord}>
+              <TouchableOpacity style={styles.quickRecordButton} onPress={handleQuickRecord}>
                 <Text style={styles.quickRecordButtonText}>🎤 Quick Record</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.newButton} onPress={handleNewNote}>
@@ -249,14 +226,10 @@ const NotesPanel: React.FC<NotesPanelProps> = ({
         </View>
       ) : notes.length === 0 ? (
         <View style={styles.centerContainer}>
-          <Text style={styles.emptyText}>
-            No notes yet. Create your first note!
-          </Text>
+          <Text style={styles.emptyText}>No notes yet. Create your first note!</Text>
         </View>
       ) : (
-        <ScrollView
-          style={styles.notesList}
-          showsVerticalScrollIndicator={false}>
+        <ScrollView style={styles.notesList} showsVerticalScrollIndicator={false}>
           {notes.map(note => (
             <NoteItem
               key={note.id}

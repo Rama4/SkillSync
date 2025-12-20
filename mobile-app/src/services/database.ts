@@ -88,19 +88,10 @@ class DatabaseService {
       VALUES (?, ?, ?, ?, ?);
     `;
 
-    await this.db.executeSql(insertQuery, [
-      topic.id,
-      JSON.stringify(topic),
-      version,
-      topic.lastUpdated,
-      syncStatus,
-    ]);
+    await this.db.executeSql(insertQuery, [topic.id, JSON.stringify(topic), version, topic.lastUpdated, syncStatus]);
   }
 
-  async updateTopicSyncStatus(
-    topicId: string,
-    syncStatus: 'synced' | 'pending' | 'outdated',
-  ): Promise<void> {
+  async updateTopicSyncStatus(topicId: string, syncStatus: 'synced' | 'pending' | 'outdated'): Promise<void> {
     if (!this.db) throw new Error('Database not initialized');
 
     const updateQuery = `UPDATE topics SET syncStatus = ? WHERE id = ?;`;
@@ -200,9 +191,7 @@ class DatabaseService {
   }
 
   // Sync metadata operations
-  async updateSyncTimestamp(
-    topicsIndexVersion: string = '1.0.0',
-  ): Promise<void> {
+  async updateSyncTimestamp(topicsIndexVersion: string = '1.0.0'): Promise<void> {
     if (!this.db) throw new Error('Database not initialized');
 
     const timestamp = new Date().toISOString();
@@ -228,8 +217,7 @@ class DatabaseService {
   async getTopicsIndexVersion(): Promise<string> {
     if (!this.db) throw new Error('Database not initialized');
 
-    const selectQuery =
-      'SELECT topicsIndexVersion FROM sync_meta WHERE id = 1;';
+    const selectQuery = 'SELECT topicsIndexVersion FROM sync_meta WHERE id = 1;';
     const [results] = await this.db.executeSql(selectQuery);
 
     if (results.rows.length === 0) return '0.0.0';
@@ -248,8 +236,7 @@ class DatabaseService {
     const syncMetaQuery = 'SELECT * FROM sync_meta WHERE id = 1;';
     const [syncResults] = await this.db.executeSql(syncMetaQuery);
 
-    const topicsCountQuery =
-      'SELECT syncStatus, COUNT(*) as count FROM topics GROUP BY syncStatus;';
+    const topicsCountQuery = 'SELECT syncStatus, COUNT(*) as count FROM topics GROUP BY syncStatus;';
     const [topicsResults] = await this.db.executeSql(topicsCountQuery);
 
     let topicsSynced = 0;
@@ -265,14 +252,9 @@ class DatabaseService {
     }
 
     return {
-      lastSyncTimestamp:
-        syncResults.rows.length > 0
-          ? syncResults.rows.item(0).lastSyncTimestamp
-          : null,
+      lastSyncTimestamp: syncResults.rows.length > 0 ? syncResults.rows.item(0).lastSyncTimestamp : null,
       topicsIndexVersion:
-        syncResults.rows.length > 0
-          ? syncResults.rows.item(0).topicsIndexVersion || '0.0.0'
-          : '0.0.0',
+        syncResults.rows.length > 0 ? syncResults.rows.item(0).topicsIndexVersion || '0.0.0' : '0.0.0',
       topicsSynced,
       topicsOutdated,
     };

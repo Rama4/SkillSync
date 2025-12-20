@@ -20,12 +20,7 @@ export const createNestedFolders = async path => {
         console.log('createNestedFolders() created path:', currentPath);
       }
     } catch (error) {
-      console.error(
-        'createNestedFolders()',
-        'currentPath=',
-        currentPath,
-        error,
-      );
+      console.error('createNestedFolders()', 'currentPath=', currentPath, error);
     }
   }
 };
@@ -50,9 +45,7 @@ export const createNewFolder = async (path, folderName) => {
 export const getFilesInFolder = async folderPath => {
   try {
     const result = await RNFS.readDir(folderPath);
-    const fileNames = result
-      .filter(item => item.isFile())
-      .map(file => file.name);
+    const fileNames = result.filter(item => item.isFile()).map(file => file.name);
     console.log('getFilesInFolder() File names in the folder:', fileNames);
     return fileNames;
   } catch (error) {
@@ -61,8 +54,7 @@ export const getFilesInFolder = async folderPath => {
   }
 };
 
-export const getFullPath = (fileDirectory, filename) =>
-  fileDirectory + '/' + filename;
+export const getFullPath = (fileDirectory, filename) => fileDirectory + '/' + filename;
 
 export const getFileName = filePath => {
   const parts = filePath.split(/[/\\]/);
@@ -116,11 +108,11 @@ export const isFileExists = async (fileDirectory, fileName) => {
   }
 };
 
-export const fileExists = async filePath => {
+export const isFileOrFolderExists = async filePath => {
   try {
     return await RNFS.exists(filePath);
   } catch (error) {
-    console.error('fileExists()', error);
+    console.error('isFileOrFolderExists()', error);
     return false;
   }
 };
@@ -138,9 +130,7 @@ export const readJsonFile = async filePath => {
 export const getFoldersInDirectory = async directoryPath => {
   try {
     const result = await RNFS.readDir(directoryPath);
-    const folderNames = result
-      .filter(item => item.isDirectory())
-      .map(folder => folder.name);
+    const folderNames = result.filter(item => item.isDirectory()).map(folder => folder.name);
     console.log('Folder names in the directory:', folderNames);
     return folderNames;
   } catch (error) {
