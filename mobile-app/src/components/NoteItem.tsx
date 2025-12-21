@@ -1,7 +1,8 @@
 import React from 'react';
 import {View, Text, TouchableOpacity, StyleSheet, Alert} from 'react-native';
 import {Note} from '../../../lib/types';
-import AudioPlayer from './AudioPlayer';
+import AudioPlayer from '@/components/AudioPlayer';
+import {formatUpdatedAt} from '@/utils/noteUtils';
 
 interface NoteItemProps {
   note: Note;
@@ -12,23 +13,7 @@ interface NoteItemProps {
   onDeleteAudio: (noteId: string) => void;
 }
 
-const NoteItem: React.FC<NoteItemProps> = ({note, topicId, lessonId, onEdit, onDelete, onDeleteAudio}) => {
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return (
-      date.toLocaleDateString() +
-      ' ' +
-      date.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    );
-  };
-
-  const handleDeleteAudio = () => {
-    onDeleteAudio(note.id);
-  };
-
+const NoteItem: React.FC<NoteItemProps> = ({note, onEdit, onDelete, onDeleteAudio}: NoteItemProps) => {
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.content} onPress={() => onEdit(note)}>
@@ -36,7 +21,7 @@ const NoteItem: React.FC<NoteItemProps> = ({note, topicId, lessonId, onEdit, onD
         <Text style={styles.preview} numberOfLines={2}>
           {note.markdown || 'No content'}
         </Text>
-        <Text style={styles.date}>{formatDate(note.updatedAt)}</Text>
+        <Text style={styles.date}>{formatUpdatedAt(note.updatedAt)}</Text>
       </TouchableOpacity>
 
       {note.audioFile && (
@@ -47,7 +32,7 @@ const NoteItem: React.FC<NoteItemProps> = ({note, topicId, lessonId, onEdit, onD
               console.error('Audio player error:', error);
               Alert.alert('Playback Error', error);
             }}
-            onDelete={handleDeleteAudio}
+            onDelete={() => onDeleteAudio(note.id)}
             style={styles.audioPlayer}
           />
         </View>

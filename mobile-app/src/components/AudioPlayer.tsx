@@ -1,7 +1,7 @@
 import React, {useState, useEffect, useCallback, useRef} from 'react';
 import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
 import Slider from '@react-native-community/slider';
-import {audioRecorder} from '../native/AudioRecorder';
+import {audioRecorder} from '@/native/AudioRecorder';
 
 interface AudioPlayerProps {
   filePath: string;
@@ -11,14 +11,14 @@ interface AudioPlayerProps {
 }
 
 const AudioPlayer: React.FC<AudioPlayerProps> = ({filePath, onError, style, onDelete}) => {
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSeeking, setIsSeeking] = useState(false);
+  const [currentTime, setCurrentTime] = useState<number>(0);
+  const [duration, setDuration] = useState<number>(0);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isSeeking, setIsSeeking] = useState<boolean>(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const filePathRef = useRef(filePath);
+  const filePathRef = useRef<string>(filePath);
 
   // Clear timer helper
   const clearTimer = useCallback(() => {
@@ -202,6 +202,10 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({filePath, onError, style, onDe
         {/* Play/Pause Button */}
         <TouchableOpacity style={styles.compactButton} onPress={onPlayPause} disabled={isLoading}>
           <Text style={styles.compactButtonText}>{isPlaying ? '⏸️' : '▶️'}</Text>
+        </TouchableOpacity>
+        {/* Stop Button */}
+        <TouchableOpacity style={styles.compactButton} onPress={onStop} disabled={isLoading}>
+          <Text style={styles.compactButtonText}>⏹️</Text>
         </TouchableOpacity>
 
         {/* Slider */}

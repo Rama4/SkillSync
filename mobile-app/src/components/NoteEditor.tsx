@@ -4,24 +4,34 @@ import {Note} from '../../../lib/types';
 import {notesService} from '../services/notesService';
 import {audioRecorder} from '../native/AudioRecorder';
 import AudioPlayer from './AudioPlayer';
+import {formatDuration, getTempAudioFileName} from '../utils/noteUtils';
 
 interface NoteEditorProps {
   note?: Note | null;
   topicId: string;
-  lessonId: string;
+  lessonId?: string; // Optional for topic-level notes
   lessonTitle?: string;
   onSave: (note: Note) => void;
   onCancel: () => void;
+  onCreateLesson?: (note: Note) => void; // Callback when lesson needs to be created
 }
 
-const NoteEditor: React.FC<NoteEditorProps> = ({note, topicId, lessonId, lessonTitle = '', onSave, onCancel}) => {
-  const [title, setTitle] = useState(note?.title || '');
-  const [markdown, setMarkdown] = useState(note?.markdown || '');
-  const [isRecording, setIsRecording] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+const NoteEditor: React.FC<NoteEditorProps> = ({
+  note,
+  topicId,
+  lessonId,
+  lessonTitle = '',
+  onSave,
+  onCancel,
+  onCreateLesson,
+}) => {
+  const [title, setTitle] = useState<string>(note?.title || '');
+  const [markdown, setMarkdown] = useState<string>(note?.markdown || '');
+  const [isRecording, setIsRecording] = useState<boolean>(false);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
   const [audioPath, setAudioPath] = useState<string | null>(note?.audioFile || null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [recordingDuration, setRecordingDuration] = useState<number>(0);
 
   useEffect(() => {
     // Set up event listeners
@@ -56,12 +66,6 @@ const NoteEditor: React.FC<NoteEditorProps> = ({note, topicId, lessonId, lessonT
       });
     };
   }, []);
-
-  const formatDuration = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
 
   const startRecording = useCallback(async () => {
     try {
@@ -136,13 +140,18 @@ const NoteEditor: React.FC<NoteEditorProps> = ({note, topicId, lessonId, lessonT
   }, [audioPath, isPlaying]);
 
   const generateAudioNoteTitle = useCallback((): string => {
+    // For topic-level notes, use a simple title
+    if (!lessonId) {
+      return getTempAudioFileName();
+    }
+    // For lesson-level notes, use the lesson title and recording number
     const existingNotes = notesService.getNotes(topicId, lessonId);
     const audioNotes = existingNotes.filter(n => n.audioFile);
     const recordingNumber = audioNotes.length + 1;
     return lessonTitle ? `${lessonTitle} ${recordingNumber}` : `Recording ${recordingNumber}`;
   }, [topicId, lessonId, lessonTitle]);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     // Auto-generate title if empty but audio exists
     let finalTitle = title.trim();
     const hasAudio = audioPath || note?.audioFile;
@@ -162,7 +171,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({note, topicId, lessonId, lessonT
       // Create or update note
       const savedNote: Note = {
         id: note?.id || `note_${Date.now()}`,
-        lessonId,
+        lessonId: lessonId || `temp-${Date.now()}`, // Use placeholder if no lessonId
         title: finalTitle,
         markdown: markdown.trim() || '',
         audioFile: audioPath || note?.audioFile,
@@ -170,8 +179,14 @@ const NoteEditor: React.FC<NoteEditorProps> = ({note, topicId, lessonId, lessonT
         updatedAt: new Date().toISOString(),
       };
 
-      await notesService.saveNote(topicId, lessonId, savedNote);
-      console.log('Note saved successfully:', savedNote);
+      // If no lessonId (topic-level note), trigger lesson creation callback
+      if (!lessonId && onCreateLesson) {
+        onCreateLesson(savedNote);
+      } else if (lessonId) {
+        // Save note normally if lessonId exists
+        await notesService.saveNote(topicId, lessonId, savedNote);
+        console.log('Note saved successfully:', savedNote);
+      }
 
       onSave(savedNote);
     } catch (error) {
@@ -180,7 +195,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({note, topicId, lessonId, lessonT
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [title, markdown, audioPath, note, onCreateLesson, topicId, lessonId, onSave, generateAudioNoteTitle]);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>

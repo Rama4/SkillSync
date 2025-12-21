@@ -2,15 +2,15 @@ import React, {useState, useEffect} from 'react';
 import {View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIndicator} from 'react-native';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../../../lib/mobile_types';
-import {syncService, SyncStatus} from '../services/syncService';
-import {databaseService} from '../services/database';
+import {syncService, SyncStatus} from '@/services/syncService';
+import {databaseService} from '@/services/database';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
 
-const SettingsScreen: React.FC<Props> = ({navigation}) => {
+const SettingsScreen: React.FC<Props> = () => {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(syncService.getSyncStatus());
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
-  const [topicsCount, setTopicsCount] = useState(0);
+  const [topicsCount, setTopicsCount] = useState<number>(0);
 
   useEffect(() => {
     loadSyncInfo();

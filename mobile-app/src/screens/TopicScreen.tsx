@@ -1,17 +1,23 @@
 import React, {useState, useEffect} from 'react';
-import {View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Alert} from 'react-native';
+import {View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Alert, TextInput} from 'react-native';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../../../lib/mobile_types';
-import {TopicMeta, Lesson} from '../../../lib/types';
-import {databaseService} from '../services/database';
+import {TopicMeta, Lesson, Note} from '../../../lib/types';
+import {databaseService} from '@/services/database';
+import {createLessonFromNote} from '@/utils/lessonUtils';
+import NoteEditor from '@/components/NoteEditor';
+import {notesService} from '@/services/notesService';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Topic'>;
 
 const TopicScreen: React.FC<Props> = ({navigation, route}) => {
-  const {topicId, topicTitle} = route.params;
+  const {topicId} = route.params;
   const [topic, setTopic] = useState<TopicMeta | null>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [showNoteEditor, setShowNoteEditor] = useState<boolean>(false);
+  const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState<string>('');
 
   useEffect(() => {
     loadTopicData();
@@ -48,6 +54,126 @@ const TopicScreen: React.FC<Props> = ({navigation, route}) => {
     });
   };
 
+  const handleNoteSaved = async (note: Note) => {
+    try {
+      // Create lesson from note
+      const order = lessons.length + 1;
+      const previousLessonId = lessons.length > 0 ? lessons[lessons.length - 1].id : null;
+      const newLesson = createLessonFromNote(note, topicId, order, previousLessonId, null);
+
+      // Update previous lesson's nextLesson reference
+      if (previousLessonId && lessons.length > 0) {
+        const previousLesson = lessons[lessons.length - 1];
+        previousLesson.nextLesson = newLesson.id;
+        await databaseService.saveLesson(previousLesson);
+      }
+
+      // Save the new lesson
+      await databaseService.saveLesson(newLesson);
+
+      // Update note with real lessonId
+      const updatedNote: Note = {
+        ...note,
+        lessonId: newLesson.id,
+      };
+      await notesService.saveNote(topicId, newLesson.id, updatedNote);
+
+      // Update topic's lessons array
+      if (topic) {
+        const updatedTopic: TopicMeta = {
+          ...topic,
+          lessons: [
+            ...topic.lessons,
+            {
+              id: newLesson.id,
+              order: newLesson.order,
+              title: newLesson.title,
+              duration: newLesson.duration,
+              difficulty: newLesson.difficulty,
+            },
+          ],
+          lastUpdated: new Date().toISOString().split('T')[0],
+        };
+        await databaseService.saveTopic(updatedTopic);
+        setTopic(updatedTopic);
+      }
+
+      // Refresh lessons list
+      await loadTopicData();
+
+      // Close note editor
+      setShowNoteEditor(false);
+
+      Alert.alert('Success', `Lesson "${newLesson.title}" created successfully!`);
+    } catch (error) {
+      console.error('Failed to create lesson from note:', error);
+      Alert.alert('Error', 'Failed to create lesson from note');
+    }
+  };
+
+  const handleStartEditingTitle = (lesson: Lesson) => {
+    setEditingLessonId(lesson.id);
+    setEditingTitle(lesson.title);
+  };
+
+  const handleSaveTitle = async (lessonId: string) => {
+    const trimmedTitle = editingTitle.trim();
+    if (!trimmedTitle) {
+      Alert.alert('Error', 'Lesson title cannot be empty');
+      return;
+    }
+
+    try {
+      const lesson = lessons.find(l => l.id === lessonId);
+      if (!lesson) {
+        Alert.alert('Error', 'Lesson not found');
+        return;
+      }
+
+      // Update lesson title
+      const updatedLesson: Lesson = {
+        ...lesson,
+        title: trimmedTitle,
+        lastUpdated: new Date().toISOString().split('T')[0],
+      };
+      await databaseService.saveLesson(updatedLesson);
+
+      // Update topic's lesson metadata
+      if (topic) {
+        const updatedLessons = topic.lessons.map(l =>
+          l.id === lessonId
+            ? {
+                ...l,
+                title: trimmedTitle,
+              }
+            : l,
+        );
+        const updatedTopic: TopicMeta = {
+          ...topic,
+          lessons: updatedLessons,
+          lastUpdated: new Date().toISOString().split('T')[0],
+        };
+        await databaseService.saveTopic(updatedTopic);
+        setTopic(updatedTopic);
+      }
+
+      // Refresh lessons list
+      await loadTopicData();
+
+      // Reset editing state
+      setEditingLessonId(null);
+      setEditingTitle('');
+    } catch (error) {
+      console.error('Failed to update lesson title:', error);
+      Alert.alert('Error', 'Failed to update lesson title');
+    }
+  };
+
+  const handleCancelEditing = () => {
+    setEditingLessonId(null);
+    setEditingTitle('');
+  };
+
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case 'beginner':
@@ -74,6 +200,17 @@ const TopicScreen: React.FC<Props> = ({navigation, route}) => {
     }
   };
 
+  if (showNoteEditor) {
+    return (
+      <NoteEditor
+        topicId={topicId}
+        onSave={handleNoteSaved}
+        onCancel={() => setShowNoteEditor(false)}
+        onCreateLesson={handleNoteSaved}
+      />
+    );
+  }
+
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
@@ -85,6 +222,13 @@ const TopicScreen: React.FC<Props> = ({navigation, route}) => {
 
   return (
     <View style={styles.container}>
+      {/* Header with New Note Button */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.newNoteButton} onPress={() => setShowNoteEditor(true)}>
+          <Text style={styles.newNoteButtonText}>+ New Note</Text>
+        </TouchableOpacity>
+      </View>
+
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
         {/* Topic Header */}
         {topic && (
@@ -111,13 +255,35 @@ const TopicScreen: React.FC<Props> = ({navigation, route}) => {
           <View>
             <Text style={styles.sectionTitle}>Lessons ({lessons.length})</Text>
             {lessons.map((lesson, index) => (
-              <TouchableOpacity key={lesson.id} style={styles.lessonCard} onPress={() => navigateToLesson(lesson)}>
+              <TouchableOpacity
+                key={lesson.id}
+                style={styles.lessonCard}
+                onPress={() => navigateToLesson(lesson)}
+                onLongPress={() => handleStartEditingTitle(lesson)}>
                 <View style={styles.lessonHeader}>
                   <View style={styles.lessonNumber}>
                     <Text style={styles.lessonNumberText}>{index + 1}</Text>
                   </View>
                   <View style={styles.lessonInfo}>
-                    <Text style={styles.lessonTitle}>{lesson.title}</Text>
+                    {editingLessonId === lesson.id ? (
+                      <View style={styles.titleEditContainer}>
+                        <TextInput
+                          style={styles.titleInput}
+                          value={editingTitle}
+                          onChangeText={setEditingTitle}
+                          autoFocus
+                          onSubmitEditing={() => handleSaveTitle(lesson.id)}
+                        />
+                        <TouchableOpacity style={styles.saveTitleButton} onPress={() => handleSaveTitle(lesson.id)}>
+                          <Text style={styles.saveTitleButtonText}>✓</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.cancelTitleButton} onPress={handleCancelEditing}>
+                          <Text style={styles.cancelTitleButtonText}>✕</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <Text style={styles.lessonTitle}>{lesson.title}</Text>
+                    )}
                     <View style={styles.lessonMeta}>
                       <Text style={styles.duration}>⏱️ {lesson.duration}</Text>
                       <View style={styles.difficulty}>
@@ -314,6 +480,64 @@ const styles = StyleSheet.create({
     color: '#a1a1aa',
     textAlign: 'center',
     lineHeight: 22,
+  },
+  header: {
+    backgroundColor: '#1a1a1a',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333333',
+  },
+  newNoteButton: {
+    backgroundColor: '#8b5cf6',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    alignSelf: 'flex-start',
+  },
+  newNoteButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  titleEditContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  titleInput: {
+    flex: 1,
+    backgroundColor: '#0a0a0a',
+    borderWidth: 1,
+    borderColor: '#8b5cf6',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    fontSize: 16,
+    color: '#ffffff',
+  },
+  saveTitleButton: {
+    backgroundColor: '#10b981',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  saveTitleButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  cancelTitleButton: {
+    backgroundColor: '#ef4444',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  cancelTitleButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

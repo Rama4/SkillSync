@@ -1,10 +1,11 @@
 import React, {useState, useEffect, useCallback} from 'react';
 import {View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Alert} from 'react-native';
 import {Note} from '../../../lib/types';
-import {notesService} from '../services/notesService';
-import {audioRecorder} from '../native/AudioRecorder';
-import NoteItem from './NoteItem';
+import {notesService} from '@/services/notesService';
+import {audioRecorder} from '@/native/AudioRecorder';
+import NoteItem from '@/components/NoteItem';
 import NoteEditor from './NoteEditor';
+import {formatDuration} from '@/utils/noteUtils';
 
 interface NotesPanelProps {
   topicId: string;
@@ -14,13 +15,13 @@ interface NotesPanelProps {
 
 const NotesPanel: React.FC<NotesPanelProps> = ({topicId, lessonId, lessonTitle = ''}) => {
   const [notes, setNotes] = useState<Note[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
-  const [showEditor, setShowEditor] = useState(false);
-  const [isQuickRecording, setIsQuickRecording] = useState(false);
-  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [showEditor, setShowEditor] = useState<boolean>(false);
+  const [isQuickRecording, setIsQuickRecording] = useState<boolean>(false);
+  const [recordingDuration, setRecordingDuration] = useState<number>(0);
 
-  const loadNotes = async () => {
+  const loadNotes = useCallback(async () => {
     setLoading(true);
     try {
       const loadedNotes = await notesService.getNotes(topicId, lessonId);
@@ -31,10 +32,11 @@ const NotesPanel: React.FC<NotesPanelProps> = ({topicId, lessonId, lessonTitle =
     } finally {
       setLoading(false);
     }
-  };
+  }, [topicId, lessonId]);
 
   useEffect(() => {
     loadNotes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topicId, lessonId]);
 
   useEffect(() => {
@@ -57,12 +59,6 @@ const NotesPanel: React.FC<NotesPanelProps> = ({topicId, lessonId, lessonTitle =
     },
     [lessonTitle],
   );
-
-  const formatDuration = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
 
   const handleQuickRecord = useCallback(async () => {
     try {
@@ -128,59 +124,65 @@ const NotesPanel: React.FC<NotesPanelProps> = ({topicId, lessonId, lessonTitle =
     }
   }, [isQuickRecording, topicId, lessonId, generateAudioNoteTitle, loadNotes]);
 
-  const handleSave = (note: Note) => {
+  const handleSave = useCallback(() => {
     setShowEditor(false);
     setEditingNote(null);
     loadNotes();
-  };
+  }, [loadNotes]);
 
-  const handleEdit = (note: Note) => {
+  const handleEdit = useCallback((note: Note) => {
     setEditingNote(note);
     setShowEditor(true);
-  };
+  }, []);
 
-  const handleDelete = async (noteId: string) => {
-    Alert.alert('Delete Note', 'Are you sure you want to delete this note?', [
-      {text: 'Cancel', style: 'cancel'},
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await notesService.deleteNote(topicId, lessonId, noteId);
-            loadNotes();
-          } catch (error) {
-            console.error('Error deleting note:', error);
-            Alert.alert('Error', 'Failed to delete note');
-          }
+  const handleDelete = useCallback(
+    async (noteId: string) => {
+      Alert.alert('Delete Note', 'Are you sure you want to delete this note?', [
+        {text: 'Cancel', style: 'cancel'},
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await notesService.deleteNote(topicId, lessonId, noteId);
+              loadNotes();
+            } catch (error) {
+              console.error('Error deleting note:', error);
+              Alert.alert('Error', 'Failed to delete note');
+            }
+          },
         },
-      },
-    ]);
-  };
+      ]);
+    },
+    [topicId, lessonId, loadNotes],
+  );
 
-  const handleDeleteAudio = async (noteId: string) => {
-    Alert.alert('Delete Audio', 'Are you sure you want to delete the audio recording? The text note will be kept.', [
-      {text: 'Cancel', style: 'cancel'},
-      {
-        text: 'Delete Audio',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await notesService.deleteNoteAudio(topicId, lessonId, noteId);
-            loadNotes();
-          } catch (error) {
-            console.error('Error deleting audio:', error);
-            Alert.alert('Error', 'Failed to delete audio');
-          }
+  const handleDeleteAudio = useCallback(
+    async (noteId: string) => {
+      Alert.alert('Delete Audio', 'Are you sure you want to delete the audio recording? The text note will be kept.', [
+        {text: 'Cancel', style: 'cancel'},
+        {
+          text: 'Delete Audio',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await notesService.deleteNoteAudio(topicId, lessonId, noteId);
+              loadNotes();
+            } catch (error) {
+              console.error('Error deleting audio:', error);
+              Alert.alert('Error', 'Failed to delete audio');
+            }
+          },
         },
-      },
-    ]);
-  };
+      ]);
+    },
+    [topicId, lessonId, loadNotes],
+  );
 
-  const handleNewNote = () => {
+  const handleNewNote = useCallback(() => {
     setEditingNote(null);
     setShowEditor(true);
-  };
+  }, []);
 
   if (showEditor) {
     return (

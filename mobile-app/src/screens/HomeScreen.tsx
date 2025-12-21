@@ -1,23 +1,46 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Alert} from 'react-native';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {TopicMeta} from '../../../lib/types';
 import {RootStackParamList} from '../../../lib/mobile_types';
-import {databaseService} from '../services/database';
-import {syncService} from '../services/syncService';
+import {databaseService} from '@/services/database';
+import {syncService} from '@/services/syncService';
+import CreateTopicModal from '@/components/CreateTopicModal';
+import {createEmptyTopic} from '@/utils/topicUtils';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
 const HomeScreen: React.FC<Props> = ({navigation}) => {
   const [topics, setTopics] = useState<TopicMeta[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isInitializing, setIsInitializing] = useState(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isInitializing, setIsInitializing] = useState<boolean>(true);
+  const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
 
-  useEffect(() => {
-    initializeApp();
+  const loadTopics = useCallback(async () => {
+    try {
+      const topicsData = await databaseService.getAllTopics();
+      setTopics(topicsData);
+    } catch (error) {
+      console.error('Failed to load topics:', error);
+      Alert.alert('Error', 'Failed to load topics from database.');
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const initializeApp = async () => {
+  const performInitialSync = useCallback(async () => {
+    try {
+      await syncService.syncAllData();
+      await loadTopics();
+    } catch (error) {
+      console.error('Initial sync failed:', error);
+      Alert.alert('Sync Failed', 'Failed to download content. Please check your internet connection and try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [loadTopics]);
+
+  const initializeApp = useCallback(async () => {
     try {
       // Initialize database
       await databaseService.initDatabase();
@@ -42,35 +65,17 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
     } catch (error) {
       console.error('Failed to initialize app:', error);
       Alert.alert('Error', 'Failed to initialize the app. Please try again.');
-    } finally {
-      setIsInitializing(false);
     }
-  };
+  }, [loadTopics, performInitialSync]);
 
-  const performInitialSync = async () => {
-    setIsLoading(true);
-    try {
-      await syncService.syncAllData();
-      await loadTopics();
-    } catch (error) {
-      console.error('Initial sync failed:', error);
-      Alert.alert('Sync Failed', 'Failed to download content. Please check your internet connection and try again.');
-    } finally {
-      setIsLoading(false);
+  useEffect(() => {
+    if (isInitializing) {
+      (async () => {
+        await initializeApp();
+        setIsInitializing(false);
+      })();
     }
-  };
-
-  const loadTopics = async () => {
-    try {
-      const topicsData = await databaseService.getAllTopics();
-      setTopics(topicsData);
-    } catch (error) {
-      console.error('Failed to load topics:', error);
-      Alert.alert('Error', 'Failed to load topics from database.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [isInitializing, initializeApp]);
 
   const navigateToTopic = (topic: TopicMeta) => {
     navigation.navigate('Topic', {
@@ -81,6 +86,33 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
 
   const goToSettings = () => {
     navigation.navigate('Settings');
+  };
+
+  const handleCreateTopic = async (title: string) => {
+    try {
+      // Check if topic with same ID already exists
+      const topicId = createEmptyTopic(title).id;
+      const existingTopic = await databaseService.getTopic(topicId);
+      if (existingTopic) {
+        throw new Error(`Topic "${title}" already exists`);
+      }
+
+      // Create empty topic
+      const newTopic = createEmptyTopic(title);
+      await databaseService.saveTopic(newTopic);
+
+      // Refresh topics list
+      await loadTopics();
+
+      // Navigate to the newly created topic
+      navigation.navigate('Topic', {
+        topicId: newTopic.id,
+        topicTitle: newTopic.title,
+      });
+    } catch (error: any) {
+      console.error('Failed to create topic:', error);
+      throw error;
+    }
   };
 
   if (isInitializing) {
@@ -99,9 +131,14 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
         <View style={styles.header}>
           <Text style={styles.title}>📚 SkillSync</Text>
           <Text style={styles.subtitle}>Choose a topic to start learning</Text>
-          <TouchableOpacity style={styles.settingsButton} onPress={goToSettings}>
-            <Text style={styles.settingsButtonText}>⚙️ Settings</Text>
-          </TouchableOpacity>
+          <View style={styles.headerButtons}>
+            <TouchableOpacity style={styles.createButton} onPress={() => setShowCreateModal(true)}>
+              <Text style={styles.createButtonText}>+ New Topic</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.settingsButton} onPress={goToSettings}>
+              <Text style={styles.settingsButtonText}>⚙️ Settings</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Loading State */}
@@ -151,6 +188,13 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
           </View>
         )}
       </ScrollView>
+
+      {/* Create Topic Modal */}
+      <CreateTopicModal
+        visible={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreateTopic={handleCreateTopic}
+      />
     </View>
   );
 };
@@ -186,6 +230,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#a1a1aa',
     marginBottom: 16,
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+  },
+  createButton: {
+    backgroundColor: '#8b5cf6',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  createButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   settingsButton: {
     backgroundColor: '#333333',

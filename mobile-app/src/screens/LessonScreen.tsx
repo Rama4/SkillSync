@@ -5,11 +5,11 @@ import Markdown from 'react-native-markdown-display';
 import Video from 'react-native-video';
 import {RootStackParamList} from '../../../lib/mobile_types';
 import {LessonSection, Lesson} from '../../../lib/types';
-import {databaseService} from '../services/database';
-import NotesPanel from '../components/NotesPanel';
-import {isFileOrFolderExists} from '../utils/fsUtils';
-import {DOWNLOAD_DATA_PATH} from '../utils/constants';
-import {API_BASE_URL} from '../utils/constants';
+import {databaseService} from '@/services/database';
+import NotesPanel from '@/components/NotesPanel';
+import {isFileOrFolderExists} from '@/utils/fsUtils';
+import {DOWNLOAD_DATA_PATH} from '@/utils/constants';
+import {API_BASE_URL} from '@/utils/constants';
 
 // CONFIGURATION
 // Replace this with your actual API URL (e.g., 'http://localhost:3000' or your production URL)
@@ -22,14 +22,14 @@ const {width: screenWidth} = Dimensions.get('window');
 const LessonScreen: React.FC<Props> = ({navigation, route}) => {
   const {lessonId, topicId, lessonTitle} = route.params;
   const [lesson, setLesson] = useState<Lesson | null>(null);
-  const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [videoUrl, setVideoUrl] = useState('');
+  const [currentSectionIndex, setCurrentSectionIndex] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [videoUrl, setVideoUrl] = useState<string>('');
 
   const [dynamicContent, setDynamicContent] = useState<string>('');
-  const [isLoadingContent, setIsLoadingContent] = useState(false);
+  const [isLoadingContent, setIsLoadingContent] = useState<boolean>(false);
 
-  const [showNotes, setShowNotes] = useState(false);
+  const [showNotes, setShowNotes] = useState<boolean>(false);
 
   const currentSection: LessonSection | undefined = lesson?.sections[currentSectionIndex];
   const isFirstSection = currentSectionIndex === 0;

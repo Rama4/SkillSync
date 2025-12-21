@@ -1,9 +1,9 @@
 import {TopicMeta, Lesson} from '../../../lib/types';
 import {TopicsIndex, TopicSummary} from '../../../lib/mobile_types';
-import {databaseService} from './database';
-import {getFullPath, isFileOrFolderExists, readJsonFile, getFoldersInDirectory} from '../utils/fsUtils';
+import {databaseService} from '@/services/database';
+import {getFullPath, isFileOrFolderExists, readJsonFile, getFoldersInDirectory} from '@/utils/fsUtils';
 import {PermissionsAndroid, Platform} from 'react-native';
-import {DOWNLOAD_DATA_PATH, EXTERNAL_DATA_PATH, TOPICS_FILE_NAME} from '../utils/constants';
+import {DOWNLOAD_DATA_PATH, EXTERNAL_DATA_PATH, TOPICS_FILE_NAME} from '@/utils/constants';
 
 // Will be set dynamically based on accessibility
 let PublicDataPath = DOWNLOAD_DATA_PATH;

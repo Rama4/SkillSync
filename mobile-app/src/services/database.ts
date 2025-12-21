@@ -6,22 +6,13 @@ SQLite.DEBUG(true);
 SQLite.enablePromise(true);
 
 const DATABASE_NAME = 'SkillSync.db';
-const DATABASE_VERSION = '1.0';
-const DATABASE_DISPLAYNAME = 'SkillSync Database';
-const DATABASE_SIZE = 200000;
 
 class DatabaseService {
   private db: SQLite.SQLiteDatabase | null = null;
 
   async initDatabase(): Promise<void> {
     try {
-      this.db = await SQLite.openDatabase({
-        name: DATABASE_NAME,
-        version: DATABASE_VERSION,
-        displayName: DATABASE_DISPLAYNAME,
-        size: DATABASE_SIZE,
-      });
-
+      this.db = await SQLite.openDatabase({name: DATABASE_NAME});
       await this.createTables();
       console.log('Database initialized successfully');
     } catch (error) {
