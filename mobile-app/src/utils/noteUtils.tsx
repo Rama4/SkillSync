@@ -5,10 +5,22 @@ export function formatUpdatedAt(dateString: string): string {
 }
 
 // Audio recorder utils
+function padStringWithZeros(value: number): string {
+  return value.toString().padStart(2, '0');
+}
+
 export function formatDuration(seconds: number): string {
   const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
+  const hours = Math.floor(mins / 60);
+  const displayMins = Math.floor(mins % 60);
+  const displaySecs = Math.floor(seconds % 60);
+  if (hours > 0) {
+    return `${padStringWithZeros(hours)}:${padStringWithZeros(displayMins)}:${padStringWithZeros(displaySecs)}`;
+  } else if (displayMins > 0) {
+    return `${padStringWithZeros(displayMins)}:${padStringWithZeros(displaySecs)}`;
+  } else {
+    return `${padStringWithZeros(displaySecs)}s`;
+  }
 }
 
 export function getTempAudioFileName(): string {

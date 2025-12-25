@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useCallback} from 'react';
+import React, {useState, useEffect, useCallback, useRef} from 'react';
 import {View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Alert, Dimensions} from 'react-native';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import Markdown from 'react-native-markdown-display';
@@ -6,7 +6,7 @@ import Video from 'react-native-video';
 import {RootStackParamList} from '../../../lib/mobile_types';
 import {LessonSection, Lesson} from '../../../lib/types';
 import {databaseService} from '@/services/database';
-import NotesPanel from '@/components/NotesPanel';
+import NotesPanel, {NotesPanelHandle} from '@/components/NotesPanel';
 import {isFileOrFolderExists} from '@/utils/fsUtils';
 import {DOWNLOAD_DATA_PATH} from '@/utils/constants';
 import {API_BASE_URL} from '@/utils/constants';
@@ -30,6 +30,8 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
   const [isLoadingContent, setIsLoadingContent] = useState<boolean>(false);
 
   const [showNotes, setShowNotes] = useState<boolean>(false);
+  // Ref no longer needed for saving from header
+  const notesPanelRef = useRef<NotesPanelHandle>(null);
 
   const currentSection: LessonSection | undefined = lesson?.sections[currentSectionIndex];
   const isFirstSection = currentSectionIndex === 0;
@@ -38,10 +40,6 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
   // Determine if this section is a video type
   const isVideoSection =
     currentSection?.type === 'video' || (currentSection?.fileType === 'video' && !!currentSection?.filePath);
-
-  useEffect(() => {
-    loadLessonData();
-  }, [lessonId]);
 
   const loadLessonData = useCallback(async () => {
     try {
@@ -61,6 +59,10 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
       setIsLoading(false);
     }
   }, [lessonId, navigation]);
+
+  useEffect(() => {
+    loadLessonData();
+  }, [loadLessonData]);
 
   // Effect to handle content fetching
   useEffect(() => {
@@ -252,9 +254,11 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
           <TouchableOpacity style={styles.backToLessonButton} onPress={() => setShowNotes(false)}>
             <Text style={styles.backToLessonButtonText}>← Back to Lesson</Text>
           </TouchableOpacity>
-          <Text style={styles.notesTitle}>Notes</Text>
+          <View style={styles.notesTitleContainer}>
+            <Text style={styles.notesTitle}>Notes</Text>
+          </View>
         </View>
-        <NotesPanel topicId={topicId} lessonId={lessonId} lessonTitle={lessonTitle} />
+        <NotesPanel ref={notesPanelRef} topicId={topicId} lessonId={lessonId} lessonTitle={lessonTitle} />
       </View>
     );
   }
@@ -382,6 +386,29 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 14,
     fontWeight: '500',
+  },
+  notesTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  saveNoteButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#10b981',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#10b981',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+  },
+  saveNoteButtonText: {
+    color: '#ffffff',
+    fontSize: 20,
+    fontWeight: 'bold',
   },
   notesTitle: {
     fontSize: 18,

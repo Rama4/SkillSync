@@ -1,25 +1,48 @@
-import React, {useState, useEffect, useCallback} from 'react';
+import React, {useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle} from 'react';
 import {View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Alert} from 'react-native';
 import {Note} from '../../../lib/types';
 import {notesService} from '@/services/notesService';
 import {audioRecorder} from '@/native/AudioRecorder';
 import NoteItem from '@/components/NoteItem';
-import NoteEditor from './NoteEditor';
+import NoteEditor, {NoteEditorHandle} from './NoteEditor';
 import {formatDuration} from '@/utils/noteUtils';
+
+export interface NotesPanelHandle {
+  saveCurrentNote: () => Promise<void>;
+}
 
 interface NotesPanelProps {
   topicId: string;
   lessonId: string;
   lessonTitle?: string;
+  onEditorStateChange?: (isEditing: boolean) => void;
 }
 
-const NotesPanel: React.FC<NotesPanelProps> = ({topicId, lessonId, lessonTitle = ''}) => {
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [editingNote, setEditingNote] = useState<Note | null>(null);
-  const [showEditor, setShowEditor] = useState<boolean>(false);
-  const [isQuickRecording, setIsQuickRecording] = useState<boolean>(false);
-  const [recordingDuration, setRecordingDuration] = useState<number>(0);
+const NotesPanel = forwardRef<NotesPanelHandle, NotesPanelProps>(
+  ({topicId, lessonId, lessonTitle = '', onEditorStateChange}, ref) => {
+    const [notes, setNotes] = useState<Note[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [editingNote, setEditingNote] = useState<Note | null>(null);
+    const [showEditor, setShowEditor] = useState<boolean>(false);
+    const [isQuickRecording, setIsQuickRecording] = useState<boolean>(false);
+    const [recordingDuration, setRecordingDuration] = useState<number>(0);
+    
+    // Ref for the NoteEditor
+    const noteEditorRef = useRef<NoteEditorHandle>(null);
+
+    // Expose save functionality to parent
+    useImperativeHandle(ref, () => ({
+      saveCurrentNote: async () => {
+        if (showEditor && noteEditorRef.current) {
+          await noteEditorRef.current.saveNote();
+        }
+      },
+    }));
+
+    // Notify parent about editor state changes
+    useEffect(() => {
+      onEditorStateChange?.(showEditor);
+    }, [showEditor, onEditorStateChange]);
 
   const loadNotes = useCallback(async () => {
     setLoading(true);
@@ -187,6 +210,7 @@ const NotesPanel: React.FC<NotesPanelProps> = ({topicId, lessonId, lessonTitle =
   if (showEditor) {
     return (
       <NoteEditor
+        ref={noteEditorRef}
         note={editingNote}
         topicId={topicId}
         lessonId={lessonId}
@@ -247,7 +271,7 @@ const NotesPanel: React.FC<NotesPanelProps> = ({topicId, lessonId, lessonTitle =
       )}
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {
