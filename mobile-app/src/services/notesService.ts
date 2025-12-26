@@ -114,6 +114,42 @@ class NotesService {
       throw error;
     }
   }
+
+  /**
+   * Move a note from one lesson to another
+   */
+  moveNoteToLesson(
+    noteId: string,
+    fromTopicId: string,
+    fromLessonId: string,
+    toTopicId: string,
+    toLessonId: string,
+  ): Note {
+    try {
+      // Get note from source lesson
+      const sourceNotes = this.getNotes(fromTopicId, fromLessonId);
+      const note = sourceNotes.find(n => n.id === noteId);
+
+      if (!note) {
+        throw new Error(`Note ${noteId} not found in source lesson`);
+      }
+
+      // Remove note from source lesson
+      this.deleteNote(fromTopicId, fromLessonId, noteId);
+
+      // Update note's lessonId and save to target lesson
+      const updatedNote: Note = {
+        ...note,
+        lessonId: toLessonId,
+        updatedAt: new Date().toISOString(),
+      };
+
+      return this.saveNote(toTopicId, toLessonId, updatedNote);
+    } catch (error) {
+      console.error('Error moving note to lesson:', error);
+      throw error;
+    }
+  }
 }
 
 export const notesService = new NotesService();

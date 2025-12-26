@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Alert, TextInput} from 'react-native';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../../../lib/mobile_types';
@@ -11,6 +11,7 @@ import AudioPlayer from '@/components/AudioPlayer';
 import NotesTreeView from '@/components/NotesTreeView';
 import {formatDuration} from '@/utils/noteUtils';
 import {useQuickRecord} from '@/hooks/useQuickRecord';
+import {createTopicFolderStructure} from '@/utils/topicUtils';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg';
 import PlusIcon from '@/assets/icons/plus.svg';
 
@@ -30,7 +31,7 @@ const TopicScreen: React.FC<Props> = ({navigation, route}) => {
   // Use a temporary lessonId for quick recording (will be replaced when lesson is created)
   const tempLessonId = 'temp-lesson-for-recording';
 
-  // Use the quick record hook
+  // quick record hook
   const {
     isRecording: isQuickRecording,
     recordingDuration,
@@ -52,11 +53,7 @@ const TopicScreen: React.FC<Props> = ({navigation, route}) => {
     },
   });
 
-  useEffect(() => {
-    loadTopicData();
-  }, [topicId]);
-
-  const loadTopicData = async () => {
+  const loadTopicData = useCallback(async () => {
     try {
       setIsLoading(true);
 
@@ -85,164 +82,179 @@ const TopicScreen: React.FC<Props> = ({navigation, route}) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [topicId]);
 
-  const navigateToLesson = (lesson: Lesson) => {
-    navigation.navigate('Lesson', {
-      lessonId: lesson.id,
-      topicId: topicId,
-      lessonTitle: lesson.title,
-    });
-  };
+  useEffect(() => {
+    loadTopicData();
+  }, [topicId, loadTopicData]);
 
-  const handleNoteSaved = async (note: Note) => {
-    try {
-      // Create lesson from note
-      const order = lessons.length + 1;
-      const previousLessonId = lessons.length > 0 ? lessons[lessons.length - 1].id : null;
-      const newLesson = createLessonFromNote(note, topicId, order, previousLessonId, null);
+  const navigateToLesson = useCallback(
+    (lesson: Lesson) => {
+      navigation.navigate('Lesson', {
+        lessonId: lesson.id,
+        topicId: topicId,
+        lessonTitle: lesson.title,
+      });
+    },
+    [navigation, topicId],
+  );
 
-      // Update previous lesson's nextLesson reference
-      if (previousLessonId && lessons.length > 0) {
-        const previousLesson = lessons[lessons.length - 1];
-        previousLesson.nextLesson = newLesson.id;
-        await databaseService.saveLesson(previousLesson);
-        // Also save previous lesson to file system
-        await saveLessonToFileSystem(previousLesson);
-      }
+  const handleNoteSaved = useCallback(
+    async (note: Note) => {
+      try {
+        // Create lesson from note
+        const order = lessons.length + 1;
+        const previousLessonId = lessons.length > 0 ? lessons[lessons.length - 1].id : null;
+        const newLesson = createLessonFromNote(note, topicId, order, previousLessonId, null);
 
-      // Save the new lesson to database
-      await databaseService.saveLesson(newLesson);
+        // Update previous lesson's nextLesson reference
+        if (previousLessonId && lessons.length > 0) {
+          const previousLesson = lessons[lessons.length - 1];
+          previousLesson.nextLesson = newLesson.id;
+          await databaseService.saveLesson(previousLesson);
+          // Also save previous lesson to file system
+          await saveLessonToFileSystem(previousLesson);
+        }
 
-      // Save the new lesson to file system for persistence
-      await saveLessonToFileSystem(newLesson);
+        // Save the new lesson to database
+        await databaseService.saveLesson(newLesson);
 
-      // Update note with real lessonId
-      const updatedNote: Note = {
-        ...note,
-        lessonId: newLesson.id,
-      };
-      await notesService.saveNote(topicId, newLesson.id, updatedNote);
+        // Save the new lesson to file system for persistence
+        await saveLessonToFileSystem(newLesson);
 
-      // Update topic's lessons array and save to file system
-      if (topic) {
-        const updatedTopic: TopicMeta = {
-          ...topic,
-          lessons: [
-            ...topic.lessons,
-            {
-              id: newLesson.id,
-              order: newLesson.order,
-              title: newLesson.title,
-              duration: newLesson.duration,
-              difficulty: newLesson.difficulty,
-            },
-          ],
-          lastUpdated: new Date().toISOString().split('T')[0],
+        // Update note with real lessonId
+        const updatedNote: Note = {
+          ...note,
+          lessonId: newLesson.id,
         };
-        await databaseService.saveTopic(updatedTopic);
+        await notesService.saveNote(topicId, newLesson.id, updatedNote);
 
-        // Save updated topic.json to file system
-        const {createTopicFolderStructure} = await import('@/utils/topicUtils');
-        await createTopicFolderStructure(updatedTopic);
+        // Update topic's lessons array and save to file system
+        if (topic) {
+          const updatedTopic: TopicMeta = {
+            ...topic,
+            lessons: [
+              ...topic.lessons,
+              {
+                id: newLesson.id,
+                order: newLesson.order,
+                title: newLesson.title,
+                duration: newLesson.duration,
+                difficulty: newLesson.difficulty,
+              },
+            ],
+            lastUpdated: new Date().toISOString().split('T')[0],
+          };
+          await databaseService.saveTopic(updatedTopic);
 
-        // Update state directly instead of reloading everything
-        setTopic(updatedTopic);
-        setLessons([...lessons, newLesson]);
+          // Save updated topic.json to file system
+          await createTopicFolderStructure(updatedTopic);
 
-        // Update lesson notes
-        const updatedLessonNotes = {...lessonNotes};
-        updatedLessonNotes[newLesson.id] = [updatedNote];
-        setLessonNotes(updatedLessonNotes);
+          // Update state directly instead of reloading everything
+          setTopic(updatedTopic);
+          setLessons([...lessons, newLesson]);
+
+          // Update lesson notes
+          const updatedLessonNotes = {...lessonNotes};
+          updatedLessonNotes[newLesson.id] = [updatedNote];
+          setLessonNotes(updatedLessonNotes);
+        }
+
+        // Close note editor
+        setShowNoteEditor(false);
+
+        Alert.alert('Success', `Lesson "${newLesson.title}" created successfully!`);
+      } catch (error) {
+        console.error('Failed to create lesson from note:', error);
+        Alert.alert('Error', 'Failed to create lesson from note');
       }
+    },
+    [lessonNotes, lessons, topic, topicId],
+  );
 
-      // Close note editor
-      setShowNoteEditor(false);
-
-      Alert.alert('Success', `Lesson "${newLesson.title}" created successfully!`);
-    } catch (error) {
-      console.error('Failed to create lesson from note:', error);
-      Alert.alert('Error', 'Failed to create lesson from note');
-    }
-  };
-
-  const handleStartEditingTitle = (lesson: Lesson) => {
+  const handleStartEditingTitle = useCallback((lesson: Lesson) => {
     setEditingLessonId(lesson.id);
     setEditingTitle(lesson.title);
-  };
+  }, []);
 
-  const handleSaveTitle = async (lessonId: string) => {
-    const trimmedTitle = editingTitle.trim();
-    if (!trimmedTitle) {
-      Alert.alert('Error', 'Lesson title cannot be empty');
-      return;
-    }
-
-    try {
-      const lesson = lessons.find(l => l.id === lessonId);
-      if (!lesson) {
-        Alert.alert('Error', 'Lesson not found');
+  const handleSaveTitle = useCallback(
+    async (lessonId: string) => {
+      const trimmedTitle = editingTitle.trim();
+      if (!trimmedTitle) {
+        Alert.alert('Error', 'Lesson title cannot be empty');
         return;
       }
 
-      // Update lesson title
-      const updatedLesson: Lesson = {
-        ...lesson,
-        title: trimmedTitle,
-        lastUpdated: new Date().toISOString().split('T')[0],
-      };
-      await databaseService.saveLesson(updatedLesson);
+      try {
+        const lesson = lessons.find(l => l.id === lessonId);
+        if (!lesson) {
+          Alert.alert('Error', 'Lesson not found');
+          return;
+        }
 
-      // Update topic's lesson metadata
-      if (topic) {
-        const updatedLessons = topic.lessons.map(l =>
-          l.id === lessonId
-            ? {
-                ...l,
-                title: trimmedTitle,
-              }
-            : l,
-        );
-        const updatedTopic: TopicMeta = {
-          ...topic,
-          lessons: updatedLessons,
+        // Update lesson title
+        const updatedLesson: Lesson = {
+          ...lesson,
+          title: trimmedTitle,
           lastUpdated: new Date().toISOString().split('T')[0],
         };
-        await databaseService.saveTopic(updatedTopic);
-        setTopic(updatedTopic);
+        await databaseService.saveLesson(updatedLesson);
+
+        // Update topic's lesson metadata
+        if (topic) {
+          const updatedLessons = topic.lessons.map(l =>
+            l.id === lessonId
+              ? {
+                  ...l,
+                  title: trimmedTitle,
+                }
+              : l,
+          );
+          const updatedTopic: TopicMeta = {
+            ...topic,
+            lessons: updatedLessons,
+            lastUpdated: new Date().toISOString().split('T')[0],
+          };
+          await databaseService.saveTopic(updatedTopic);
+          setTopic(updatedTopic);
+        }
+
+        // Refresh lessons list
+        await loadTopicData();
+
+        // Reset editing state
+        setEditingLessonId(null);
+        setEditingTitle('');
+      } catch (error) {
+        console.error('Failed to update lesson title:', error);
+        Alert.alert('Error', 'Failed to update lesson title');
       }
+    },
+    [editingTitle, lessons, loadTopicData, topic],
+  );
 
-      // Refresh lessons list
-      await loadTopicData();
-
-      // Reset editing state
-      setEditingLessonId(null);
-      setEditingTitle('');
-    } catch (error) {
-      console.error('Failed to update lesson title:', error);
-      Alert.alert('Error', 'Failed to update lesson title');
-    }
-  };
-
-  const handleCancelEditing = () => {
+  const handleCancelEditing = useCallback(() => {
     setEditingLessonId(null);
     setEditingTitle('');
-  };
+  }, []);
 
   // Check if lesson has empty content
-  const isLessonEmpty = (lesson: Lesson): boolean => {
+  const isLessonEmpty = useCallback((lesson: Lesson): boolean => {
     return (
       !lesson.sections ||
       lesson.sections.length === 0 ||
       lesson.sections.every(section => !section.content || section.content.trim() === '')
     );
-  };
+  }, []);
 
   // Get first audio note for a lesson
-  const getFirstAudioNote = (lessonId: string): Note | null => {
-    const notes = lessonNotes[lessonId] || [];
-    return notes.find(note => note.audioFile) || null;
-  };
+  const getFirstAudioNote = useCallback(
+    (lessonId: string): Note | null => {
+      const notes = lessonNotes[lessonId] || [];
+      return notes.find(note => note.audioFile) || null;
+    },
+    [lessonNotes],
+  );
 
   if (showNoteEditor) {
     return (

@@ -1,14 +1,24 @@
-import React, {useState, useEffect, useCallback} from 'react';
+import React, {useState, useEffect, useCallback, useMemo} from 'react';
 import {View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Alert} from 'react-native';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {useDebouncedCallback} from 'use-debounce';
-import {TopicMeta} from '../../../lib/types';
+import {TopicMeta, Note} from '../../../lib/types';
 import {RootStackParamList} from '../../../lib/mobile_types';
 import {databaseService} from '@/services/database';
 import {syncService} from '@/services/syncService';
 import CreateTopicModal from '@/components/CreateTopicModal';
+import QuickRecordModal from '@/components/QuickRecordModal';
+import FloatingActionButton from '@/components/FloatingActionButton';
 import {createEmptyTopic, createTopicFolderStructure} from '@/utils/topicUtils';
 import ReloadIcon from '@/assets/icons/reload.svg';
+import {createMMKV} from 'react-native-mmkv';
+
+const recentTopicsStorage = createMMKV({
+  id: 'recent-topics-storage',
+});
+
+const RECENT_TOPICS_KEY = 'recent_topics';
+const MAX_RECENT_TOPICS = 5;
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
@@ -17,7 +27,11 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isInitializing, setIsInitializing] = useState<boolean>(true);
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
+  const [showQuickRecordModal, setShowQuickRecordModal] = useState<boolean>(false);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
+
+  // Memoize topics list for performance
+  const memoizedTopics = useMemo(() => topics, [topics]);
 
   const loadTopics = useCallback(async () => {
     try {
@@ -31,21 +45,41 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
     }
   }, []);
 
+  const syncContent = useCallback(async () => {
+    if (isSyncing) {
+      return;
+    }
+
+    setIsSyncing(true);
+    setIsLoading(true);
+
+    try {
+      await syncService.syncAllData();
+      await loadTopics();
+    } catch (error) {
+      console.error('Sync failed:', error);
+      Alert.alert('Sync Failed', 'Failed to load content. Please check your internet connection and try again.');
+    } finally {
+      setIsSyncing(false);
+      setIsLoading(false);
+    }
+  }, [isSyncing, loadTopics]);
+
   const initializeApp = useCallback(async () => {
     try {
-      // Initialize database
+      // Initialize database and wait for it to be ready
+      console.log('initializeApp() starting database initialization');
       await databaseService.initDatabase();
+      console.log('initializeApp() database initialized');
 
       // Check if we have data
       const hasData = await syncService.isDataAvailable();
+      console.log('initializeApp()', 'hasData', hasData);
 
-      if (!hasData) {
-        // First time setup - just load topics (empty state will be shown)
-        await loadTopics();
-      } else {
-        // Load existing data
-        await loadTopics();
-      }
+      // Perform initial sync and load
+      await syncService.syncAllData();
+      await loadTopics();
+      console.log('initializeApp()', 'topics loaded');
     } catch (error) {
       console.error('Failed to initialize app:', error);
       Alert.alert('Error', 'Failed to initialize the app. Please try again.');
@@ -61,38 +95,34 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
     }
   }, [isInitializing, initializeApp]);
 
-  const navigateToTopic = (topic: TopicMeta) => {
-    navigation.navigate('Topic', {
-      topicId: topic.id,
-      topicTitle: topic.title,
-    });
-  };
+  // Track recent topic
+  const trackRecentTopic = useCallback((topicId: string) => {
+    try {
+      const recent = recentTopicsStorage.getString(RECENT_TOPICS_KEY);
+      const recentList: string[] = recent ? JSON.parse(recent) : [];
+      const updated = [topicId, ...recentList.filter(id => id !== topicId)].slice(0, MAX_RECENT_TOPICS);
+      recentTopicsStorage.set(RECENT_TOPICS_KEY, JSON.stringify(updated));
+    } catch (error) {
+      console.error('Failed to track recent topic:', error);
+    }
+  }, []);
+
+  const navigateToTopic = useCallback(
+    (topic: TopicMeta) => {
+      trackRecentTopic(topic.id);
+      navigation.navigate('Topic', {
+        topicId: topic.id,
+        topicTitle: topic.title,
+      });
+    },
+    [navigation, trackRecentTopic],
+  );
 
   const goToSettings = () => {
     navigation.navigate('Settings');
   };
 
-  const handleReloadContent = useDebouncedCallback(
-    async () => {
-      if (isSyncing) return; // Prevent multiple simultaneous syncs
-
-      setIsSyncing(true);
-      setIsLoading(true);
-
-      try {
-        await syncService.syncAllData();
-        await loadTopics();
-      } catch (error) {
-        console.error('Sync failed:', error);
-        Alert.alert('Sync Failed', 'Failed to load content. Please check your internet connection and try again.');
-      } finally {
-        setIsSyncing(false);
-        setIsLoading(false);
-      }
-    },
-    1000,
-    {leading: true, trailing: false},
-  );
+  const handleReloadContent = useDebouncedCallback(syncContent, 1000, {leading: true, trailing: false});
 
   const handleCreateTopic = async (title: string) => {
     try {
@@ -105,7 +135,7 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
 
       // Create empty topic
       const newTopic = createEmptyTopic(title);
-      
+
       // Save to database
       await databaseService.saveTopic(newTopic);
 
@@ -168,10 +198,10 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
         )}
 
         {/* Topics List */}
-        {!isLoading && topics.length > 0 && (
+        {!isLoading && memoizedTopics.length > 0 && (
           <View>
             <Text style={styles.sectionTitle}>Available Topics</Text>
-            {topics.map(topic => (
+            {memoizedTopics.map(topic => (
               <TouchableOpacity key={topic.id} style={styles.topicCard} onPress={() => navigateToTopic(topic)}>
                 <View style={styles.topicHeader}>
                   <Text style={styles.topicIcon}>{topic.icon}</Text>
@@ -213,6 +243,20 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
         onClose={() => setShowCreateModal(false)}
         onCreateTopic={handleCreateTopic}
       />
+
+      {/* Quick Record Modal */}
+      <QuickRecordModal
+        visible={showQuickRecordModal}
+        onClose={() => setShowQuickRecordModal(false)}
+        mode="record-first"
+        onRecordingComplete={async (_note: Note, _topicId: string, _lessonId: string) => {
+          // Refresh topics list after recording
+          await loadTopics();
+        }}
+      />
+
+      {/* Floating Action Button for Quick Recording */}
+      <FloatingActionButton onPress={() => setShowQuickRecordModal(true)} iconText="🎤" position="bottom-right" />
     </View>
   );
 };
