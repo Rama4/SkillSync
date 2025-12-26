@@ -2,15 +2,11 @@ import RNFS from 'react-native-fs';
 
 export const createNestedFolders = async path => {
   console.log('createNestedFolders()', 'path=', path);
-  const parts = path.split('/'); // Split the path into individual directories
+  const parts = path.split('/').filter(part => part.length > 0); // Split and filter out empty parts
   let currentPath = '';
 
   for (const part of parts) {
-    currentPath = currentPath ? `${currentPath}/${part}` : part;
-    if (!currentPath?.length) {
-      console.warn('createNestedFolders()', 'part of currentPath is empty');
-      return;
-    }
+    currentPath = currentPath ? `${currentPath}/${part}` : `/${part}`;
     try {
       const folderExists = await RNFS.exists(currentPath);
       if (folderExists) {
@@ -21,6 +17,7 @@ export const createNestedFolders = async path => {
       }
     } catch (error) {
       console.error('createNestedFolders()', 'currentPath=', currentPath, error);
+      throw error; // Re-throw to let caller handle it
     }
   }
 };

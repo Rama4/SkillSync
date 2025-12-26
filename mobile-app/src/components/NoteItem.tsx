@@ -40,13 +40,12 @@ const NoteItem: React.FC<NoteItemProps> = ({note, onEdit, onDelete, onDeleteAudi
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.content} onPress={() => onEdit(note)} activeOpacity={0.7}>
-          <View style={styles.contentInner}>
-            <Text style={styles.title}>{note.title}</Text>
+          <Text style={styles.title}>{note.title}</Text>
+          {note?.markdown?.length > 0 && (
             <Text style={styles.preview} numberOfLines={2}>
-              {note.markdown || 'No content'}
+              {note.markdown}
             </Text>
-            <Text style={styles.date}>{formatUpdatedAt(note.updatedAt)}</Text>
-          </View>
+          )}
         </TouchableOpacity>
         <View style={styles.menuWrapper}>
           <ThreeDotMenu items={menuItems} />
@@ -66,6 +65,7 @@ const NoteItem: React.FC<NoteItemProps> = ({note, onEdit, onDelete, onDeleteAudi
           />
         </View>
       )}
+      <Text style={styles.date}>{formatUpdatedAt(note.updatedAt)}</Text>
     </View>
   );
 };
@@ -78,6 +78,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#333333',
     overflow: 'hidden',
+    padding: 6,
   },
   header: {
     flexDirection: 'row',
@@ -85,9 +86,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-  },
-  contentInner: {
-    padding: 14,
   },
   title: {
     fontSize: 15,

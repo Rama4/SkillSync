@@ -2,10 +2,10 @@ import React, {useState, useEffect, useCallback, useRef, forwardRef, useImperati
 import {View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Alert} from 'react-native';
 import {Note} from '../../../lib/types';
 import {notesService} from '@/services/notesService';
-import {audioRecorder} from '@/native/AudioRecorder';
 import NoteItem from '@/components/NoteItem';
 import NoteEditor, {NoteEditorHandle} from './NoteEditor';
 import {formatDuration} from '@/utils/noteUtils';
+import {useQuickRecord} from '@/hooks/useQuickRecord';
 import PlusIcon from '@/assets/icons/plus.svg';
 
 export interface NotesPanelHandle {
@@ -25,11 +25,35 @@ const NotesPanel = forwardRef<NotesPanelHandle, NotesPanelProps>(
     const [loading, setLoading] = useState<boolean>(true);
     const [editingNote, setEditingNote] = useState<Note | null>(null);
     const [showEditor, setShowEditor] = useState<boolean>(false);
-    const [isQuickRecording, setIsQuickRecording] = useState<boolean>(false);
-    const [recordingDuration, setRecordingDuration] = useState<number>(0);
 
     // Ref for the NoteEditor
     const noteEditorRef = useRef<NoteEditorHandle>(null);
+
+    const loadNotes = useCallback(async () => {
+      setLoading(true);
+      try {
+        const loadedNotes = await notesService.getNotes(topicId, lessonId);
+        setNotes(loadedNotes);
+      } catch (error) {
+        console.error('Error loading notes:', error);
+        Alert.alert('Error', 'Failed to load notes');
+      } finally {
+        setLoading(false);
+      }
+    }, [topicId, lessonId]);
+
+    // Use the quick record hook
+    const {
+      isRecording: isQuickRecording,
+      recordingDuration,
+      startRecording,
+      stopRecording,
+    } = useQuickRecord({
+      topicId,
+      lessonId,
+      lessonTitle,
+      onRecordingComplete: loadNotes,
+    });
 
     // Expose save functionality to parent
     useImperativeHandle(ref, () => ({
@@ -45,110 +69,10 @@ const NotesPanel = forwardRef<NotesPanelHandle, NotesPanelProps>(
       onEditorStateChange?.(showEditor);
     }, [showEditor, onEditorStateChange]);
 
-    const loadNotes = useCallback(async () => {
-      setLoading(true);
-      try {
-        const loadedNotes = await notesService.getNotes(topicId, lessonId);
-        setNotes(loadedNotes);
-      } catch (error) {
-        console.error('Error loading notes:', error);
-        Alert.alert('Error', 'Failed to load notes');
-      } finally {
-        setLoading(false);
-      }
-    }, [topicId, lessonId]);
-
     useEffect(() => {
       loadNotes();
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [topicId, lessonId]);
-
-    useEffect(() => {
-      if (isQuickRecording) {
-        const removeProgressListener = audioRecorder.onRecordingProgress(event => {
-          setRecordingDuration(event.duration);
-        });
-
-        return () => {
-          removeProgressListener();
-        };
-      }
-    }, [isQuickRecording]);
-
-    const generateAudioNoteTitle = useCallback(
-      (existingNotes: Note[]): string => {
-        const audioNotes = existingNotes.filter(n => n.audioFile);
-        const recordingNumber = audioNotes.length + 1;
-        return lessonTitle ? `${lessonTitle} ${recordingNumber}` : `Recording ${recordingNumber}`;
-      },
-      [lessonTitle],
-    );
-
-    const handleQuickRecord = useCallback(async () => {
-      try {
-        // Generate unique filename for the recording
-        const filename = `note_${Date.now()}.m4a`;
-
-        const result = await audioRecorder.startRecording({
-          filename,
-          sampleRate: 44100,
-          bitRate: 128000,
-          channels: 1,
-        });
-
-        if (result.success) {
-          setIsQuickRecording(true);
-          setRecordingDuration(0);
-        }
-      } catch (error: any) {
-        console.error('Error starting quick recording:', error);
-        Alert.alert(
-          'Recording Error',
-          error.message || 'Failed to start recording. Please check microphone permissions.',
-        );
-      }
-    }, []);
-
-    const stopQuickRecording = useCallback(async () => {
-      if (!isQuickRecording) {
-        return;
-      }
-
-      try {
-        const result = await audioRecorder.stopRecording();
-
-        if (result.success && result.filePath) {
-          // Get existing notes to generate title (use current notes state)
-          const existingNotes = notesService.getNotes(topicId, lessonId);
-          const generatedTitle = generateAudioNoteTitle(existingNotes);
-
-          // Create note object with all required fields
-          const newNote: Note = {
-            id: `note_${Date.now()}`,
-            lessonId,
-            title: generatedTitle,
-            markdown: '',
-            audioFile: result.filePath,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          };
-
-          // Save via notesService.saveNote()
-          notesService.saveNote(topicId, lessonId, newNote);
-          console.log('Quick recorded note saved:', newNote);
-
-          // Refresh notes list
-          loadNotes();
-        }
-
-        setIsQuickRecording(false);
-        setRecordingDuration(0);
-      } catch (error: any) {
-        console.error('Error stopping quick recording:', error);
-        Alert.alert('Error', error.message || 'Failed to stop recording');
-        setIsQuickRecording(false);
-      }
-    }, [isQuickRecording, topicId, lessonId, generateAudioNoteTitle, loadNotes]);
 
     const handleSave = useCallback(() => {
       setShowEditor(false);
@@ -237,12 +161,12 @@ const NotesPanel = forwardRef<NotesPanelHandle, NotesPanelProps>(
           <Text style={styles.title}>Notes</Text>
           <View style={styles.headerButtons}>
             {isQuickRecording ? (
-              <TouchableOpacity style={styles.stopRecordingButton} onPress={stopQuickRecording}>
+              <TouchableOpacity style={styles.stopRecordingButton} onPress={stopRecording}>
                 <Text style={styles.stopRecordingButtonText}>⏹ Stop ({formatDuration(recordingDuration)})</Text>
               </TouchableOpacity>
             ) : (
               <>
-                <TouchableOpacity style={styles.quickRecordButton} onPress={handleQuickRecord}>
+                <TouchableOpacity style={styles.quickRecordButton} onPress={startRecording}>
                   <Text style={styles.quickRecordButtonText}>🎤 Quick Record</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.newButton} onPress={handleNewNote}>

@@ -1,5 +1,8 @@
 import {Lesson, Note, LessonSection} from '../../../lib/types';
 import {slugify} from '@/utils/topicUtils';
+import RNFS from 'react-native-fs';
+import {DOWNLOAD_DATA_PATH, EXTERNAL_DATA_PATH} from '@/utils/constants';
+import {isFileOrFolderExists, getFullPath} from '@/utils/fsUtils';
 
 /**
  * Create a lesson from a note
@@ -68,4 +71,61 @@ export function createLessonFromNote(
     resources: [],
     lastUpdated: now,
   };
+}
+
+/**
+ * Find the accessible data path (Download folder or external directory)
+ */
+async function findAccessibleDataPath(): Promise<string> {
+  try {
+    // First try to access Download folder
+    const downloadFolderExists = await isFileOrFolderExists(DOWNLOAD_DATA_PATH);
+    if (downloadFolderExists) {
+      return DOWNLOAD_DATA_PATH;
+    } else {
+      // Try external directory
+      const externalFolderExists = await isFileOrFolderExists(EXTERNAL_DATA_PATH);
+      if (externalFolderExists) {
+        return EXTERNAL_DATA_PATH;
+      } else {
+        // Fallback to Download path
+        return DOWNLOAD_DATA_PATH;
+      }
+    }
+  } catch (error) {
+    console.error('Failed to find accessible data path:', error);
+    // Fallback to Download path
+    return DOWNLOAD_DATA_PATH;
+  }
+}
+
+/**
+ * Save lesson JSON file to the file system for persistence
+ * This ensures the lesson persists across app reloads
+ */
+export async function saveLessonToFileSystem(lesson: Lesson): Promise<void> {
+  try {
+    // Find accessible data path
+    const dataPath = await findAccessibleDataPath();
+    
+    // Create lesson file path: {dataPath}/{topicId}/lessons/{lessonId}.json
+    const topicDir = getFullPath(dataPath, lesson.topic);
+    const lessonsDir = getFullPath(topicDir, 'lessons');
+    const lessonFilePath = getFullPath(lessonsDir, `${lesson.id}.json`);
+    
+    // Check if lessons directory exists
+    const lessonsDirExists = await isFileOrFolderExists(lessonsDir);
+    if (!lessonsDirExists) {
+      console.error('Lessons directory does not exist:', lessonsDir);
+      return; // Don't throw, just log and return
+    }
+    
+    // Write lesson JSON file
+    const lessonJsonContent = JSON.stringify(lesson, null, 2);
+    await RNFS.writeFile(lessonFilePath, lessonJsonContent, 'utf8');
+    console.log('Saved lesson to file system:', lessonFilePath);
+  } catch (error) {
+    console.error('Failed to save lesson to file system:', error);
+    // Don't throw - allow lesson creation to continue even if file save fails
+  }
 }

@@ -4,9 +4,13 @@ import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../../../lib/mobile_types';
 import {TopicMeta, Lesson, Note} from '../../../lib/types';
 import {databaseService} from '@/services/database';
-import {createLessonFromNote} from '@/utils/lessonUtils';
+import {createLessonFromNote, saveLessonToFileSystem} from '@/utils/lessonUtils';
 import NoteEditor from '@/components/NoteEditor';
 import {notesService} from '@/services/notesService';
+import AudioPlayer from '@/components/AudioPlayer';
+import NotesTreeView from '@/components/NotesTreeView';
+import {formatDuration} from '@/utils/noteUtils';
+import {useQuickRecord} from '@/hooks/useQuickRecord';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg';
 import PlusIcon from '@/assets/icons/plus.svg';
 
@@ -20,6 +24,33 @@ const TopicScreen: React.FC<Props> = ({navigation, route}) => {
   const [showNoteEditor, setShowNoteEditor] = useState<boolean>(false);
   const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState<string>('');
+  const [lessonNotes, setLessonNotes] = useState<Record<string, Note[]>>({});
+  const [viewMode, setViewMode] = useState<'lessons' | 'notes'>('lessons');
+
+  // Use a temporary lessonId for quick recording (will be replaced when lesson is created)
+  const tempLessonId = 'temp-lesson-for-recording';
+
+  // Use the quick record hook
+  const {
+    isRecording: isQuickRecording,
+    recordingDuration,
+    startRecording,
+    stopRecording,
+  } = useQuickRecord({
+    topicId,
+    lessonId: tempLessonId,
+    lessonTitle: topic?.title,
+    onRecordingComplete: async () => {
+      // After recording, get the note and create a lesson from it
+      const tempNotes = notesService.getNotes(topicId, tempLessonId);
+      if (tempNotes.length > 0) {
+        const latestNote = tempNotes[tempNotes.length - 1];
+        await handleNoteSaved(latestNote);
+        // Clean up the temp note
+        await notesService.deleteNote(topicId, tempLessonId, latestNote.id);
+      }
+    },
+  });
 
   useEffect(() => {
     loadTopicData();
@@ -40,6 +71,14 @@ const TopicScreen: React.FC<Props> = ({navigation, route}) => {
       // Sort lessons by order
       lessonsData.sort((a, b) => a.order - b.order);
       setLessons(lessonsData);
+
+      // Load notes for each lesson
+      const notesMap: Record<string, Note[]> = {};
+      for (const lesson of lessonsData) {
+        const notes = notesService.getNotes(topicId, lesson.id);
+        notesMap[lesson.id] = notes;
+      }
+      setLessonNotes(notesMap);
     } catch (error) {
       console.error('Failed to load topic data:', error);
       Alert.alert('Error', 'Failed to load topic data.');
@@ -68,10 +107,15 @@ const TopicScreen: React.FC<Props> = ({navigation, route}) => {
         const previousLesson = lessons[lessons.length - 1];
         previousLesson.nextLesson = newLesson.id;
         await databaseService.saveLesson(previousLesson);
+        // Also save previous lesson to file system
+        await saveLessonToFileSystem(previousLesson);
       }
 
-      // Save the new lesson
+      // Save the new lesson to database
       await databaseService.saveLesson(newLesson);
+
+      // Save the new lesson to file system for persistence
+      await saveLessonToFileSystem(newLesson);
 
       // Update note with real lessonId
       const updatedNote: Note = {
@@ -80,7 +124,7 @@ const TopicScreen: React.FC<Props> = ({navigation, route}) => {
       };
       await notesService.saveNote(topicId, newLesson.id, updatedNote);
 
-      // Update topic's lessons array
+      // Update topic's lessons array and save to file system
       if (topic) {
         const updatedTopic: TopicMeta = {
           ...topic,
@@ -97,11 +141,20 @@ const TopicScreen: React.FC<Props> = ({navigation, route}) => {
           lastUpdated: new Date().toISOString().split('T')[0],
         };
         await databaseService.saveTopic(updatedTopic);
-        setTopic(updatedTopic);
-      }
 
-      // Refresh lessons list
-      await loadTopicData();
+        // Save updated topic.json to file system
+        const {createTopicFolderStructure} = await import('@/utils/topicUtils');
+        await createTopicFolderStructure(updatedTopic);
+
+        // Update state directly instead of reloading everything
+        setTopic(updatedTopic);
+        setLessons([...lessons, newLesson]);
+
+        // Update lesson notes
+        const updatedLessonNotes = {...lessonNotes};
+        updatedLessonNotes[newLesson.id] = [updatedNote];
+        setLessonNotes(updatedLessonNotes);
+      }
 
       // Close note editor
       setShowNoteEditor(false);
@@ -176,6 +229,21 @@ const TopicScreen: React.FC<Props> = ({navigation, route}) => {
     setEditingTitle('');
   };
 
+  // Check if lesson has empty content
+  const isLessonEmpty = (lesson: Lesson): boolean => {
+    return (
+      !lesson.sections ||
+      lesson.sections.length === 0 ||
+      lesson.sections.every(section => !section.content || section.content.trim() === '')
+    );
+  };
+
+  // Get first audio note for a lesson
+  const getFirstAudioNote = (lessonId: string): Note | null => {
+    const notes = lessonNotes[lessonId] || [];
+    return notes.find(note => note.audioFile) || null;
+  };
+
   if (showNoteEditor) {
     return (
       <NoteEditor
@@ -198,67 +266,119 @@ const TopicScreen: React.FC<Props> = ({navigation, route}) => {
 
   return (
     <View style={styles.container}>
-      {/* Header with New Note Button */}
+      {/* Header with View Toggle and Action Buttons */}
       <View style={styles.header}>
-        {lessons && lessons.length > 0 && <Text style={styles.sectionTitle}>Lessons ({lessons.length})</Text>}
-        <TouchableOpacity style={styles.newNoteButton} onPress={() => setShowNoteEditor(true)}>
-          <PlusIcon color="white" width={16} height={16} />
-          <Text style={styles.newNoteButtonText}>New Note</Text>
-        </TouchableOpacity>
+        {/* Top Row: Title and Action Buttons */}
+        <View style={styles.headerTopRow}>
+          {lessons && lessons.length > 0 && (
+            <Text style={styles.sectionTitle}>{viewMode === 'lessons' ? `Lessons (${lessons.length})` : 'Notes'}</Text>
+          )}
+          <View style={styles.headerActions}>
+            {isQuickRecording ? (
+              <TouchableOpacity style={styles.stopRecordingButton} onPress={stopRecording}>
+                <Text style={styles.stopRecordingButtonText}>⏹ {formatDuration(recordingDuration)}</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity style={styles.quickRecordButton} onPress={startRecording}>
+                <Text style={styles.quickRecordButtonText}>🎤</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity style={styles.newNoteButton} onPress={() => setShowNoteEditor(true)}>
+              <PlusIcon color="white" width={16} height={16} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Bottom Row: View Toggle */}
+        <View style={styles.viewToggle}>
+          <TouchableOpacity
+            style={[styles.viewToggleButton, viewMode === 'lessons' && styles.viewToggleButtonActive]}
+            onPress={() => setViewMode('lessons')}>
+            <Text style={[styles.viewToggleText, viewMode === 'lessons' && styles.viewToggleTextActive]}>Lessons</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.viewToggleButton, viewMode === 'notes' && styles.viewToggleButtonActive]}
+            onPress={() => setViewMode('notes')}>
+            <Text style={[styles.viewToggleText, viewMode === 'notes' && styles.viewToggleTextActive]}>Notes</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        {/* Lessons List */}
-        {lessons.length > 0 && (
-          <View>
-            {lessons.map((lesson, index) => (
-              <TouchableOpacity
-                key={lesson.id}
-                style={styles.lessonCard}
-                onPress={() => navigateToLesson(lesson)}
-                onLongPress={() => handleStartEditingTitle(lesson)}>
-                <View style={styles.lessonHeader}>
-                  <View style={styles.lessonNumber}>
-                    <Text style={styles.lessonNumberText}>{index + 1}</Text>
-                  </View>
-                  <View style={styles.lessonInfo}>
-                    {editingLessonId === lesson.id ? (
-                      <View style={styles.titleEditContainer}>
-                        <TextInput
-                          style={styles.titleInput}
-                          value={editingTitle}
-                          onChangeText={setEditingTitle}
-                          autoFocus
-                          onSubmitEditing={() => handleSaveTitle(lesson.id)}
-                        />
-                        <TouchableOpacity style={styles.saveTitleButton} onPress={() => handleSaveTitle(lesson.id)}>
-                          <Text style={styles.saveTitleButtonText}>✓</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.cancelTitleButton} onPress={handleCancelEditing}>
-                          <Text style={styles.cancelTitleButtonText}>✕</Text>
-                        </TouchableOpacity>
-                      </View>
-                    ) : (
-                      <Text style={styles.lessonTitle}>{lesson.title}</Text>
-                    )}
-                  </View>
-                </View>
-                <ArrowRightIcon color="white" width={18} height={18} />
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
+      {viewMode === 'notes' ? (
+        <NotesTreeView topicId={topicId} />
+      ) : (
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+          {/* Lessons List */}
+          {lessons.length > 0 && (
+            <View>
+              {lessons.map((lesson, index) => {
+                const isEmpty = isLessonEmpty(lesson);
+                const audioNote = isEmpty ? getFirstAudioNote(lesson.id) : null;
 
-        {/* Empty State */}
-        {lessons.length === 0 && (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateTitle}>No Lessons Available</Text>
-            <Text style={styles.emptyStateText}>
-              No lessons found for this topic. The content might not be downloaded yet.
-            </Text>
-          </View>
-        )}
-      </ScrollView>
+                return (
+                  <TouchableOpacity
+                    key={lesson.id}
+                    style={styles.lessonCard}
+                    onPress={() => navigateToLesson(lesson)}
+                    onLongPress={() => handleStartEditingTitle(lesson)}>
+                    <View style={styles.lessonHeader}>
+                      <View style={styles.lessonNumber}>
+                        <Text style={styles.lessonNumberText}>{index + 1}</Text>
+                      </View>
+                      <View style={styles.lessonInfo}>
+                        {editingLessonId === lesson.id ? (
+                          <View style={styles.titleEditContainer}>
+                            <TextInput
+                              style={styles.titleInput}
+                              value={editingTitle}
+                              onChangeText={setEditingTitle}
+                              autoFocus
+                              onSubmitEditing={() => handleSaveTitle(lesson.id)}
+                            />
+                            <TouchableOpacity style={styles.saveTitleButton} onPress={() => handleSaveTitle(lesson.id)}>
+                              <Text style={styles.saveTitleButtonText}>✓</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.cancelTitleButton} onPress={handleCancelEditing}>
+                              <Text style={styles.cancelTitleButtonText}>✕</Text>
+                            </TouchableOpacity>
+                          </View>
+                        ) : (
+                          <>
+                            <Text style={styles.lessonTitle}>{lesson.title}</Text>
+                            {audioNote && (
+                              <View style={styles.audioPlayerContainer}>
+                                <AudioPlayer
+                                  filePath={audioNote.audioFile!}
+                                  onError={error => {
+                                    console.error('Audio player error:', error);
+                                    Alert.alert('Playback Error', error);
+                                  }}
+                                  style={styles.audioPlayer}
+                                />
+                              </View>
+                            )}
+                          </>
+                        )}
+                      </View>
+                    </View>
+                    <ArrowRightIcon color="white" width={18} height={18} />
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+
+          {/* Empty State */}
+          {lessons.length === 0 && (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateTitle}>No Lessons Available</Text>
+              <Text style={styles.emptyStateText}>
+                No lessons found for this topic. The content might not be downloaded yet.
+              </Text>
+            </View>
+          )}
+        </ScrollView>
+      )}
     </View>
   );
 };
@@ -325,12 +445,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#a1a1aa',
     fontWeight: '500',
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: 'white',
-    marginBottom: 16,
   },
   lessonCard: {
     backgroundColor: '#1a1a1a',
@@ -420,28 +534,88 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   header: {
+    backgroundColor: '#1a1a1a',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333333',
+    gap: 12,
+  },
+  headerTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#1a1a1a',
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#333333',
   },
-  newNoteButton: {
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: 'white',
+  },
+  headerActions: {
     flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  viewToggle: {
+    flexDirection: 'row',
+    backgroundColor: '#0a0a0a',
+    borderRadius: 8,
+    padding: 3,
+    alignSelf: 'flex-start',
+  },
+  viewToggleButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  viewToggleButtonActive: {
+    backgroundColor: '#8b5cf6',
+  },
+  viewToggleText: {
+    color: '#a1a1aa',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  viewToggleTextActive: {
+    color: 'white',
+    fontWeight: '600',
+  },
+  quickRecordButton: {
+    width: 40,
+    height: 40,
+    backgroundColor: '#8b5cf6',
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#8b5cf6',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
   },
-  newNoteButtonText: {
+  quickRecordButtonText: {
+    fontSize: 18,
+  },
+  stopRecordingButton: {
+    backgroundColor: '#dc2626',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  stopRecordingButtonText: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 12,
     fontWeight: '600',
+    fontFamily: 'monospace',
+  },
+  newNoteButton: {
+    width: 40,
+    height: 40,
+    backgroundColor: '#8b5cf6',
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   titleEditContainer: {
     flexDirection: 'row',
@@ -481,6 +655,15 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  audioPlayerContainer: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#333333',
+  },
+  audioPlayer: {
+    marginTop: 0,
   },
 });
 

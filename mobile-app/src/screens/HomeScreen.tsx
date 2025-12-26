@@ -7,7 +7,7 @@ import {RootStackParamList} from '../../../lib/mobile_types';
 import {databaseService} from '@/services/database';
 import {syncService} from '@/services/syncService';
 import CreateTopicModal from '@/components/CreateTopicModal';
-import {createEmptyTopic} from '@/utils/topicUtils';
+import {createEmptyTopic, createTopicFolderStructure} from '@/utils/topicUtils';
 import ReloadIcon from '@/assets/icons/reload.svg';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
@@ -105,7 +105,13 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
 
       // Create empty topic
       const newTopic = createEmptyTopic(title);
+      
+      // Save to database
       await databaseService.saveTopic(newTopic);
+
+      // Create folder structure and topic.json file for persistence
+      // This ensures the topic will be discovered during sync
+      await createTopicFolderStructure(newTopic);
 
       // Refresh topics list
       await loadTopics();

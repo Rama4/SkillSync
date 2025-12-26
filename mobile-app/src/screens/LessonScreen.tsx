@@ -20,6 +20,8 @@ import NotesPanel, {NotesPanelHandle} from '@/components/NotesPanel';
 import {isFileOrFolderExists} from '@/utils/fsUtils';
 import {DOWNLOAD_DATA_PATH} from '@/utils/constants';
 import {API_BASE_URL} from '@/utils/constants';
+import {formatDuration} from '@/utils/noteUtils';
+import {useQuickRecord} from '@/hooks/useQuickRecord';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg';
 import ArrowLeftIcon from '@/assets/icons/arrow-left.svg';
 import NoteBookPenIcon from '@/assets/icons/notebook-pen.svg';
@@ -50,6 +52,18 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
   const [showNotes, setShowNotes] = useState<boolean>(false);
   // Ref no longer needed for saving from header
   const notesPanelRef = useRef<NotesPanelHandle>(null);
+
+  // Use the quick record hook
+  const {
+    isRecording: isQuickRecording,
+    recordingDuration,
+    startRecording,
+    stopRecording,
+  } = useQuickRecord({
+    topicId,
+    lessonId,
+    lessonTitle,
+  });
 
   const currentSection: LessonSection | undefined = lesson?.sections[currentSectionIndex];
   const isFirstSection = currentSectionIndex === 0;
@@ -157,23 +171,23 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
   };
 
   const markdownStyles = {
-    body: {color: 'white', fontSize: 16, lineHeight: 24},
+    body: {color: '#ffffff', fontSize: 16, lineHeight: 24},
     heading1: {
-      color: 'white',
+      color: '#ffffff',
       fontSize: 24,
       fontWeight: 'bold',
       marginBottom: 16,
       marginTop: 20,
     },
     heading2: {
-      color: 'white',
+      color: '#ffffff',
       fontSize: 20,
       fontWeight: '600',
       marginBottom: 12,
       marginTop: 16,
     },
     heading3: {
-      color: 'white',
+      color: '#ffffff',
       fontSize: 18,
       fontWeight: '600',
       marginBottom: 8,
@@ -185,7 +199,7 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
       lineHeight: 24,
       marginBottom: 12,
     },
-    strong: {color: 'white', fontWeight: 'bold'},
+    strong: {color: '#ffffff', fontWeight: 'bold'},
     em: {color: '#a1a1aa', fontStyle: 'italic'},
     code_inline: {
       backgroundColor: '#333333',
@@ -226,7 +240,7 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
     },
     thead: {backgroundColor: '#1a1a1a'},
     th: {
-      color: 'white',
+      color: '#ffffff',
       fontWeight: 'bold',
       padding: 12,
       borderBottomWidth: 1,
@@ -268,14 +282,6 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
   if (showNotes) {
     return (
       <View style={styles.container}>
-        <View style={styles.notesHeader}>
-          <TouchableOpacity style={styles.backToLessonButton} onPress={() => setShowNotes(false)}>
-            <Text style={styles.backToLessonButtonText}>← Back to Lesson</Text>
-          </TouchableOpacity>
-          <View style={styles.notesTitleContainer}>
-            <Text style={styles.notesTitle}>Notes</Text>
-          </View>
-        </View>
         <NotesPanel ref={notesPanelRef} topicId={topicId} lessonId={lessonId} lessonTitle={lessonTitle} />
       </View>
     );
@@ -291,10 +297,21 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
           </Text>
           <Text style={styles.sectionTitle}>{currentSection?.title}</Text>
         </View>
-        <TouchableOpacity style={styles.notesButton} onPress={() => setShowNotes(true)}>
-          <NoteBookPenIcon color="white" width={16} height={16} />
-          <Text style={styles.notesButtonText}>Notes</Text>
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          {isQuickRecording ? (
+            <TouchableOpacity style={styles.stopRecordingButton} onPress={stopRecording}>
+              <Text style={styles.stopRecordingButtonText}>⏹ Stop ({formatDuration(recordingDuration)})</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={styles.quickRecordButton} onPress={startRecording}>
+              <Text style={styles.quickRecordButtonText}>🎤</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity style={styles.notesButton} onPress={() => setShowNotes(true)}>
+            <NoteBookPenIcon color="whit" width={16} height={16} />
+            <Text style={styles.notesButtonText}>Notes</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Section Content */}
@@ -364,7 +381,7 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
             style={[styles.navButton, isFirstSection && styles.navButtonHidden]}
             onPress={goToPreviousSection}
             disabled={isFirstSection}>
-            <ArrowLeftIcon color="white" width={16} height={16} />
+            <ArrowLeftIcon color="#ffffff" width={16} height={16} />
             <Text style={styles.navButtonText}> Previous</Text>
           </TouchableOpacity>
 
@@ -383,7 +400,7 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
             onPress={goToNextSection}
             disabled={isLastSection}>
             <Text style={styles.navButtonText}>Next</Text>
-            <ArrowRightIcon color="white" width={16} height={16} />
+            <ArrowRightIcon color="#ffffff" width={16} height={16} />
           </TouchableOpacity>
         </View>
       )}
@@ -430,7 +447,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#374151',
   },
   backToLessonButtonText: {
-    color: 'white',
+    color: '#ffffff',
     fontSize: 14,
     fontWeight: '500',
   },
@@ -442,7 +459,37 @@ const styles = StyleSheet.create({
   notesTitle: {
     fontSize: 18,
     fontWeight: '600',
+    color: '#ffffff',
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  quickRecordButton: {
+    backgroundColor: '#8b5cf6',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickRecordButtonText: {
     color: 'white',
+    fontSize: 16,
+  },
+  stopRecordingButton: {
+    backgroundColor: '#dc2626',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  stopRecordingButtonText: {
+    color: 'white',
+    fontSize: 13,
+    fontWeight: '500',
+    fontFamily: 'monospace',
   },
   notesButton: {
     flexDirection: 'row',
@@ -455,7 +502,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#8b5cf6',
   },
   notesButtonText: {
-    color: 'white',
+    color: '#ffffff',
     fontSize: 14,
     fontWeight: '500',
   },
@@ -470,7 +517,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    color: 'white',
+    color: '#ffffff',
     fontWeight: '600',
     flexWrap: 'wrap',
   },
@@ -494,7 +541,7 @@ const styles = StyleSheet.create({
   flashCardTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: 'white',
+    color: '#ffffff',
     marginBottom: 20,
     textAlign: 'center',
   },
@@ -535,7 +582,7 @@ const styles = StyleSheet.create({
     opacity: 0,
   },
   navButtonText: {
-    color: 'white',
+    color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
