@@ -1,12 +1,14 @@
 import React, {useState, useEffect, useCallback} from 'react';
 import {View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Alert} from 'react-native';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
+import {useDebouncedCallback} from 'use-debounce';
 import {TopicMeta} from '../../../lib/types';
 import {RootStackParamList} from '../../../lib/mobile_types';
 import {databaseService} from '@/services/database';
 import {syncService} from '@/services/syncService';
 import CreateTopicModal from '@/components/CreateTopicModal';
 import {createEmptyTopic} from '@/utils/topicUtils';
+import ReloadIcon from '@/assets/icons/reload.svg';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
@@ -15,6 +17,7 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isInitializing, setIsInitializing] = useState<boolean>(true);
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
   const loadTopics = useCallback(async () => {
     try {
@@ -28,18 +31,6 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
     }
   }, []);
 
-  const performInitialSync = useCallback(async () => {
-    try {
-      await syncService.syncAllData();
-      await loadTopics();
-    } catch (error) {
-      console.error('Initial sync failed:', error);
-      Alert.alert('Sync Failed', 'Failed to download content. Please check your internet connection and try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [loadTopics]);
-
   const initializeApp = useCallback(async () => {
     try {
       // Initialize database
@@ -49,15 +40,8 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
       const hasData = await syncService.isDataAvailable();
 
       if (!hasData) {
-        // First time setup - show sync prompt
-        Alert.alert(
-          'Welcome to SkillSync!',
-          'This is your first time using the app. Make sure you have placed your learning content in Download/SkillSync/data/ folder, then load it into the app.',
-          [
-            {text: 'Later', style: 'cancel'},
-            {text: 'Load Content', onPress: performInitialSync},
-          ],
-        );
+        // First time setup - just load topics (empty state will be shown)
+        await loadTopics();
       } else {
         // Load existing data
         await loadTopics();
@@ -66,7 +50,7 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
       console.error('Failed to initialize app:', error);
       Alert.alert('Error', 'Failed to initialize the app. Please try again.');
     }
-  }, [loadTopics, performInitialSync]);
+  }, [loadTopics]);
 
   useEffect(() => {
     if (isInitializing) {
@@ -87,6 +71,28 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
   const goToSettings = () => {
     navigation.navigate('Settings');
   };
+
+  const handleReloadContent = useDebouncedCallback(
+    async () => {
+      if (isSyncing) return; // Prevent multiple simultaneous syncs
+
+      setIsSyncing(true);
+      setIsLoading(true);
+
+      try {
+        await syncService.syncAllData();
+        await loadTopics();
+      } catch (error) {
+        console.error('Sync failed:', error);
+        Alert.alert('Sync Failed', 'Failed to load content. Please check your internet connection and try again.');
+      } finally {
+        setIsSyncing(false);
+        setIsLoading(false);
+      }
+    },
+    1000,
+    {leading: true, trailing: false},
+  );
 
   const handleCreateTopic = async (title: string) => {
     try {
@@ -137,6 +143,12 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
             </TouchableOpacity>
             <TouchableOpacity style={styles.settingsButton} onPress={goToSettings}>
               <Text style={styles.settingsButtonText}>⚙️ Settings</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.settingsButton, isSyncing && styles.syncingButton]}
+              onPress={handleReloadContent}
+              disabled={isSyncing}>
+              <ReloadIcon width={20} height={20} color={isSyncing ? '#666666' : 'white'} />
             </TouchableOpacity>
           </View>
         </View>
@@ -223,7 +235,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: 'white',
     marginBottom: 8,
   },
   subtitle: {
@@ -243,7 +255,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   createButtonText: {
-    color: '#ffffff',
+    color: 'white',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -254,14 +266,17 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   settingsButtonText: {
-    color: '#ffffff',
+    color: 'white',
     fontSize: 14,
     fontWeight: '500',
+  },
+  syncingButton: {
+    opacity: 0.5,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#ffffff',
+    color: 'white',
     marginBottom: 16,
   },
   topicCard: {
@@ -287,7 +302,7 @@ const styles = StyleSheet.create({
   topicTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#ffffff',
+    color: 'white',
     marginBottom: 4,
   },
   topicDescription: {
@@ -325,7 +340,7 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#ffffff',
+    color: 'white',
     marginBottom: 8,
   },
   emptyStateText: {
@@ -343,7 +358,7 @@ const styles = StyleSheet.create({
     minWidth: 150,
   },
   buttonText: {
-    color: '#ffffff',
+    color: 'white',
     fontSize: 16,
     fontWeight: '600',
   },

@@ -7,6 +7,8 @@ import {databaseService} from '@/services/database';
 import {createLessonFromNote} from '@/utils/lessonUtils';
 import NoteEditor from '@/components/NoteEditor';
 import {notesService} from '@/services/notesService';
+import ArrowRightIcon from '@/assets/icons/arrow-right.svg';
+import PlusIcon from '@/assets/icons/plus.svg';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Topic'>;
 
@@ -174,32 +176,6 @@ const TopicScreen: React.FC<Props> = ({navigation, route}) => {
     setEditingTitle('');
   };
 
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case 'beginner':
-        return '#10b981';
-      case 'intermediate':
-        return '#f59e0b';
-      case 'advanced':
-        return '#ef4444';
-      default:
-        return '#6b7280';
-    }
-  };
-
-  const getDifficultyIcon = (difficulty: string) => {
-    switch (difficulty) {
-      case 'beginner':
-        return '🟢';
-      case 'intermediate':
-        return '🟡';
-      case 'advanced':
-        return '🔴';
-      default:
-        return '⚪';
-    }
-  };
-
   if (showNoteEditor) {
     return (
       <NoteEditor
@@ -224,36 +200,17 @@ const TopicScreen: React.FC<Props> = ({navigation, route}) => {
     <View style={styles.container}>
       {/* Header with New Note Button */}
       <View style={styles.header}>
+        {lessons && lessons.length > 0 && <Text style={styles.sectionTitle}>Lessons ({lessons.length})</Text>}
         <TouchableOpacity style={styles.newNoteButton} onPress={() => setShowNoteEditor(true)}>
-          <Text style={styles.newNoteButtonText}>+ New Note</Text>
+          <PlusIcon color="white" width={16} height={16} />
+          <Text style={styles.newNoteButtonText}>New Note</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        {/* Topic Header */}
-        {topic && (
-          <View style={styles.topicHeader}>
-            <Text style={styles.topicIcon}>{topic.icon}</Text>
-            <View style={styles.topicInfo}>
-              <Text style={styles.topicTitle}>{topic.title}</Text>
-              <Text style={styles.topicDescription}>{topic.description}</Text>
-              {topic.tags.length > 0 && (
-                <View style={styles.tagsContainer}>
-                  {topic.tags.map((tag, index) => (
-                    <View key={index} style={styles.tag}>
-                      <Text style={styles.tagText}>{tag}</Text>
-                    </View>
-                  ))}
-                </View>
-              )}
-            </View>
-          </View>
-        )}
-
         {/* Lessons List */}
         {lessons.length > 0 && (
           <View>
-            <Text style={styles.sectionTitle}>Lessons ({lessons.length})</Text>
             {lessons.map((lesson, index) => (
               <TouchableOpacity
                 key={lesson.id}
@@ -284,23 +241,9 @@ const TopicScreen: React.FC<Props> = ({navigation, route}) => {
                     ) : (
                       <Text style={styles.lessonTitle}>{lesson.title}</Text>
                     )}
-                    <View style={styles.lessonMeta}>
-                      <Text style={styles.duration}>⏱️ {lesson.duration}</Text>
-                      <View style={styles.difficulty}>
-                        <Text style={styles.difficultyIcon}>{getDifficultyIcon(lesson.difficulty)}</Text>
-                        <Text style={[styles.difficultyText, {color: getDifficultyColor(lesson.difficulty)}]}>
-                          {lesson.difficulty}
-                        </Text>
-                      </View>
-                    </View>
-                    {lesson.objectives.length > 0 && (
-                      <Text style={styles.objectives} numberOfLines={2}>
-                        {lesson.objectives[0]}
-                      </Text>
-                    )}
                   </View>
                 </View>
-                <Text style={styles.arrow}>→</Text>
+                <ArrowRightIcon color="white" width={18} height={18} />
               </TouchableOpacity>
             ))}
           </View>
@@ -357,7 +300,7 @@ const styles = StyleSheet.create({
   topicTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: 'white',
     marginBottom: 8,
   },
   topicDescription: {
@@ -386,7 +329,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#ffffff',
+    color: 'white',
     marginBottom: 16,
   },
   lessonCard: {
@@ -414,7 +357,7 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   lessonNumberText: {
-    color: '#ffffff',
+    color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -424,7 +367,7 @@ const styles = StyleSheet.create({
   lessonTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ffffff',
+    color: 'white',
     marginBottom: 8,
   },
   lessonMeta: {
@@ -455,11 +398,6 @@ const styles = StyleSheet.create({
     color: '#a1a1aa',
     lineHeight: 18,
   },
-  arrow: {
-    fontSize: 18,
-    color: '#666666',
-    marginLeft: 12,
-  },
   loadingText: {
     color: '#a1a1aa',
     fontSize: 16,
@@ -472,7 +410,7 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#ffffff',
+    color: 'white',
     marginBottom: 8,
   },
   emptyStateText: {
@@ -482,22 +420,27 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: '#1a1a1a',
     paddingHorizontal: 20,
-    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#333333',
   },
   newNoteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
     backgroundColor: '#8b5cf6',
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    alignSelf: 'flex-start',
   },
   newNoteButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
+    color: 'white',
+    fontSize: 16,
     fontWeight: '600',
   },
   titleEditContainer: {
@@ -515,7 +458,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     fontSize: 16,
-    color: '#ffffff',
+    color: 'white',
   },
   saveTitleButton: {
     backgroundColor: '#10b981',
@@ -524,7 +467,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   saveTitleButtonText: {
-    color: '#ffffff',
+    color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -535,7 +478,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   cancelTitleButtonText: {
-    color: '#ffffff',
+    color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
   },

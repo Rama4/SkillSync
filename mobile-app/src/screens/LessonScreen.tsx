@@ -1,5 +1,15 @@
 import React, {useState, useEffect, useCallback, useRef} from 'react';
-import {View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Alert, Dimensions} from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  Animated,
+} from 'react-native';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import Markdown from 'react-native-markdown-display';
 import Video from 'react-native-video';
@@ -10,6 +20,9 @@ import NotesPanel, {NotesPanelHandle} from '@/components/NotesPanel';
 import {isFileOrFolderExists} from '@/utils/fsUtils';
 import {DOWNLOAD_DATA_PATH} from '@/utils/constants';
 import {API_BASE_URL} from '@/utils/constants';
+import ArrowRightIcon from '@/assets/icons/arrow-right.svg';
+import ArrowLeftIcon from '@/assets/icons/arrow-left.svg';
+import NoteBookPenIcon from '@/assets/icons/notebook-pen.svg';
 
 // CONFIGURATION
 // Replace this with your actual API URL (e.g., 'http://localhost:3000' or your production URL)
@@ -28,6 +41,11 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
 
   const [dynamicContent, setDynamicContent] = useState<string>('');
   const [isLoadingContent, setIsLoadingContent] = useState<boolean>(false);
+
+  // Custom Scrollbar Logic
+  const [contentHeight, setContentHeight] = useState(0);
+  const [scrollViewHeight, setScrollViewHeight] = useState(0);
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   const [showNotes, setShowNotes] = useState<boolean>(false);
   // Ref no longer needed for saving from header
@@ -139,23 +157,23 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
   };
 
   const markdownStyles = {
-    body: {color: '#ffffff', fontSize: 16, lineHeight: 24},
+    body: {color: 'white', fontSize: 16, lineHeight: 24},
     heading1: {
-      color: '#ffffff',
+      color: 'white',
       fontSize: 24,
       fontWeight: 'bold',
       marginBottom: 16,
       marginTop: 20,
     },
     heading2: {
-      color: '#ffffff',
+      color: 'white',
       fontSize: 20,
       fontWeight: '600',
       marginBottom: 12,
       marginTop: 16,
     },
     heading3: {
-      color: '#ffffff',
+      color: 'white',
       fontSize: 18,
       fontWeight: '600',
       marginBottom: 8,
@@ -167,7 +185,7 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
       lineHeight: 24,
       marginBottom: 12,
     },
-    strong: {color: '#ffffff', fontWeight: 'bold'},
+    strong: {color: 'white', fontWeight: 'bold'},
     em: {color: '#a1a1aa', fontStyle: 'italic'},
     code_inline: {
       backgroundColor: '#333333',
@@ -208,7 +226,7 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
     },
     thead: {backgroundColor: '#1a1a1a'},
     th: {
-      color: '#ffffff',
+      color: 'white',
       fontWeight: 'bold',
       padding: 12,
       borderBottomWidth: 1,
@@ -274,76 +292,101 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
           <Text style={styles.sectionTitle}>{currentSection?.title}</Text>
         </View>
         <TouchableOpacity style={styles.notesButton} onPress={() => setShowNotes(true)}>
-          <Text style={styles.notesButtonText}>📝 Notes</Text>
+          <NoteBookPenIcon color="white" width={16} height={16} />
+          <Text style={styles.notesButtonText}>Notes</Text>
         </TouchableOpacity>
-        <View style={styles.progressBar}>
-          <View
-            style={[
-              styles.progressFill,
-              {
-                width: `${((currentSectionIndex + 1) / lesson.sections.length) * 100}%`,
-              },
-            ]}
-          />
-        </View>
       </View>
 
       {/* Section Content */}
-      <ScrollView style={styles.contentContainer} contentContainerStyle={styles.content}>
-        <View style={styles.flashCard}>
-          <Text style={styles.flashCardTitle}>{currentSection?.title}</Text>
+      <View style={styles.contentContainer}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollViewContent}
+          showsVerticalScrollIndicator={false}
+          onLayout={e => setScrollViewHeight(e.nativeEvent.layout.height)}
+          onContentSizeChange={(_, height) => setContentHeight(height)}
+          onScroll={Animated.event([{nativeEvent: {contentOffset: {y: scrollY}}}], {useNativeDriver: false})}
+          scrollEventThrottle={16}>
+          <View style={styles.flashCard}>
+            <Text style={styles.flashCardTitle}>{currentSection?.title}</Text>
 
-          {/* Video Player Section */}
-          {isVideoSection && videoUrl && (
-            <View style={styles.videoContainer}>
-              <Video
-                source={{uri: videoUrl}}
-                style={styles.videoPlayer}
-                // seekColor="red"
-                controls={true}
-                // disableSeekbar
-                resizeMode="contain"
-                paused={true} // Start paused so it doesn't auto-blast audio
-                onError={(e: any) => console.log('Video Error:', e)}
-              />
-            </View>
-          )}
+            {/* Video Player Section */}
+            {isVideoSection && videoUrl && (
+              <View style={styles.videoContainer}>
+                <Video
+                  source={{uri: videoUrl}}
+                  style={styles.videoPlayer}
+                  // seekColor="red"
+                  controls={true}
+                  // disableSeekbar
+                  resizeMode="contain"
+                  paused={true} // Start paused so it doesn't auto-blast audio
+                  onError={(e: any) => console.log('Video Error:', e)}
+                />
+              </View>
+            )}
 
-          {/* Markdown Content (Dynamically loaded or Static) */}
-          {isLoadingContent ? (
-            <ActivityIndicator size="small" color="#8b5cf6" style={{marginTop: 20}} />
-          ) : (
-            <Markdown style={markdownStyles}>{dynamicContent}</Markdown>
-          )}
-        </View>
-      </ScrollView>
+            {/* Markdown Content (Dynamically loaded or Static) */}
+            {isLoadingContent ? (
+              <ActivityIndicator size="small" color="#8b5cf6" style={{marginTop: 20}} />
+            ) : (
+              <Markdown style={markdownStyles}>{dynamicContent}</Markdown>
+            )}
+          </View>
+        </ScrollView>
+        {contentHeight > scrollViewHeight && (
+          <View style={styles.customScrollbarTrack}>
+            <Animated.View
+              style={[
+                styles.customScrollbarThumb,
+                {
+                  height: (scrollViewHeight / contentHeight) * scrollViewHeight,
+                  transform: [
+                    {
+                      translateY: scrollY.interpolate({
+                        inputRange: [0, contentHeight - scrollViewHeight],
+                        outputRange: [0, scrollViewHeight - (scrollViewHeight / contentHeight) * scrollViewHeight],
+                        extrapolate: 'clamp',
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            />
+          </View>
+        )}
+      </View>
 
       {/* Navigation Controls */}
-      <View style={styles.navigationContainer}>
-        <TouchableOpacity
-          style={[styles.navButton, isFirstSection && styles.navButtonDisabled]}
-          onPress={goToPreviousSection}
-          disabled={isFirstSection}>
-          <Text style={[styles.navButtonText, isFirstSection && styles.navButtonTextDisabled]}>← Previous</Text>
-        </TouchableOpacity>
+      {lesson?.sections?.length > 1 && (
+        <View style={styles.navigationContainer}>
+          <TouchableOpacity
+            style={[styles.navButton, isFirstSection && styles.navButtonHidden]}
+            onPress={goToPreviousSection}
+            disabled={isFirstSection}>
+            <ArrowLeftIcon color="white" width={16} height={16} />
+            <Text style={styles.navButtonText}> Previous</Text>
+          </TouchableOpacity>
 
-        <View style={styles.sectionIndicators}>
-          {lesson.sections.map((_, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[styles.sectionDot, index === currentSectionIndex && styles.sectionDotActive]}
-              onPress={() => goToSection(index)}
-            />
-          ))}
+          <View style={styles.sectionIndicators}>
+            {lesson.sections.map((_, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[styles.sectionDot, index === currentSectionIndex && styles.sectionDotActive]}
+                onPress={() => goToSection(index)}
+              />
+            ))}
+          </View>
+
+          <TouchableOpacity
+            style={[styles.navButton, isLastSection && styles.navButtonHidden]}
+            onPress={goToNextSection}
+            disabled={isLastSection}>
+            <Text style={styles.navButtonText}>Next</Text>
+            <ArrowRightIcon color="white" width={16} height={16} />
+          </TouchableOpacity>
         </View>
-
-        <TouchableOpacity
-          style={[styles.navButton, isLastSection && styles.navButtonDisabled]}
-          onPress={goToNextSection}
-          disabled={isLastSection}>
-          <Text style={[styles.navButtonText, isLastSection && styles.navButtonTextDisabled]}>Next →</Text>
-        </TouchableOpacity>
-      </View>
+      )}
     </View>
   );
 };
@@ -360,6 +403,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   progressHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
     backgroundColor: '#1a1a1a',
     paddingHorizontal: 20,
     paddingVertical: 16,
@@ -383,7 +430,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#374151',
   },
   backToLessonButtonText: {
-    color: '#ffffff',
+    color: 'white',
     fontSize: 14,
     fontWeight: '500',
   },
@@ -392,45 +439,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  saveNoteButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#10b981',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#10b981',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-  },
-  saveNoteButtonText: {
-    color: '#ffffff',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
   notesTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#ffffff',
+    color: 'white',
   },
   notesButton: {
-    position: 'absolute',
-    right: 20,
-    top: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
     backgroundColor: '#8b5cf6',
   },
   notesButtonText: {
-    color: '#ffffff',
-    fontSize: 12,
+    color: 'white',
+    fontSize: 14,
     fontWeight: '500',
   },
   progressInfo: {
-    marginBottom: 12,
+    flex: 1,
   },
   progressText: {
     fontSize: 14,
@@ -440,23 +470,17 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    color: '#ffffff',
+    color: 'white',
     fontWeight: '600',
-  },
-  progressBar: {
-    height: 4,
-    backgroundColor: '#333333',
-    borderRadius: 2,
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#8b5cf6',
-    borderRadius: 2,
+    flexWrap: 'wrap',
   },
   contentContainer: {
     flex: 1,
   },
-  content: {
+  scrollView: {
+    flex: 1,
+  },
+  scrollViewContent: {
     padding: 20,
   },
   flashCard: {
@@ -470,7 +494,7 @@ const styles = StyleSheet.create({
   flashCardTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: 'white',
     marginBottom: 20,
     textAlign: 'center',
   },
@@ -487,27 +511,31 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   navigationContainer: {
+    // width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
+    // flexWrap: 'wrap',
     backgroundColor: '#1a1a1a',
     borderTopWidth: 1,
     borderTopColor: '#333333',
   },
   navButton: {
     backgroundColor: '#8b5cf6',
-    borderRadius: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    minWidth: 80,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  navButtonDisabled: {
-    backgroundColor: '#333333',
+  navButtonHidden: {
+    opacity: 0,
   },
   navButtonText: {
-    color: '#ffffff',
+    color: 'white',
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
@@ -541,6 +569,20 @@ const styles = StyleSheet.create({
     color: '#ef4444',
     fontSize: 18,
     fontWeight: '500',
+  },
+  customScrollbarTrack: {
+    position: 'absolute',
+    right: 2,
+    top: 2,
+    bottom: 2,
+    width: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 3,
+  },
+  customScrollbarThumb: {
+    width: 6,
+    backgroundColor: '#8b5cf6',
+    borderRadius: 3,
   },
 });
 

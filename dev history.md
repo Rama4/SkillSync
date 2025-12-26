@@ -6,7 +6,7 @@
 
 Right now, in development mode, so we are dropping the db table and re initializing it upon every app start to keep up with changes in schema during development.
 
-### prod build configs:
+### Prod build configs:
 
 created a keystore file and placed in android folder using the official React Native guide
 
@@ -68,3 +68,11 @@ followed these instructions for placing the latest ninja executable in the lates
 
 followed these instructions for enabling long paths in windows registry, and editing the `android/app/build.gradle` config to pass on the custom cmake options:
 https://github.com/ninja-build/ninja/issues/1900#issuecomment-1817532728
+
+### [UI] Icons : serving from svg files
+
+Using `react-native-svg` and `react-native-svg-transformer` to import svg icons located in `mobile-app/src/assets` as react components using [mobile-app/src/declarations.d.ts](mobile-app/src/declarations.d.ts)
+
+Using svg icons from [Open-Iconic](https://www.shadcn.io/icons/oi) and [Lucide](https://www.shadcn.io/icons/lucide)
+
+All SVGs use `fill="currentColor"` for dynamic coloring via `color` prop. See [SVG Icons Guide](mobile-app/docs/SVG_ICONS_GUIDE.md) for adding new icons.

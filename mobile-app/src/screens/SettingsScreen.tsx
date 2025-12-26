@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: 'white',
     marginBottom: 8,
   },
   subtitle: {
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#ffffff',
+    color: 'white',
     marginBottom: 16,
   },
   cardText: {
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
   },
   infoValue: {
     fontSize: 14,
-    color: '#ffffff',
+    color: 'white',
     fontWeight: '500',
   },
   infoValueSuccess: {
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   syncProgressText: {
-    color: '#ffffff',
+    color: 'white',
     fontSize: 14,
     marginLeft: 8,
   },
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   buttonText: {
-    color: '#ffffff',
+    color: 'white',
     fontSize: 14,
     fontWeight: '600',
   },

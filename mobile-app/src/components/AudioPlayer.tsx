@@ -196,9 +196,9 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({filePath, onError, style, onDe
         {/* Play/Pause Button */}
         <TouchableOpacity style={styles.compactButton} onPress={onPlayPause} disabled={isLoading}>
           {isPlaying ? (
-            <PauseIcon width={16} height={16} color="#ffffff" />
+            <PauseIcon width={16} height={16} color="white" />
           ) : (
-            <PlayIcon width={16} height={16} color="#ffffff" />
+            <PlayIcon width={16} height={16} color="white" />
           )}
         </TouchableOpacity>
 
@@ -227,7 +227,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({filePath, onError, style, onDe
         {/* Delete Button */}
         {onDelete && (
           <TouchableOpacity style={styles.compactDeleteButton} onPress={onDelete} disabled={isLoading}>
-            <TrashIcon width={16} height={16} color="#ffffff" />
+            <TrashIcon width={16} height={16} color="white" />
           </TouchableOpacity>
         )}
       </View>

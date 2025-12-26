@@ -3,6 +3,7 @@ import {View, Text, TouchableOpacity, StyleSheet, Alert} from 'react-native';
 import {Note} from '../../../lib/types';
 import AudioPlayer from '@/components/AudioPlayer';
 import {formatUpdatedAt} from '@/utils/noteUtils';
+import ThreeDotMenu from '@/components/ThreeDotMenu';
 
 interface NoteItemProps {
   note: Note;
@@ -14,15 +15,43 @@ interface NoteItemProps {
 }
 
 const NoteItem: React.FC<NoteItemProps> = ({note, onEdit, onDelete, onDeleteAudio}: NoteItemProps) => {
+  const menuItems = [
+    {
+      label: 'Edit',
+      onPress: () => onEdit(note),
+    },
+    ...(note.audioFile
+      ? [
+          {
+            label: 'Delete Audio',
+            onPress: () => onDeleteAudio(note.id),
+            destructive: true,
+          },
+        ]
+      : []),
+    {
+      label: 'Delete',
+      onPress: () => onDelete(note.id),
+      destructive: true,
+    },
+  ];
+
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.content} onPress={() => onEdit(note)}>
-        <Text style={styles.title}>{note.title}</Text>
-        <Text style={styles.preview} numberOfLines={2}>
-          {note.markdown || 'No content'}
-        </Text>
-        <Text style={styles.date}>{formatUpdatedAt(note.updatedAt)}</Text>
-      </TouchableOpacity>
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.content} onPress={() => onEdit(note)} activeOpacity={0.7}>
+          <View style={styles.contentInner}>
+            <Text style={styles.title}>{note.title}</Text>
+            <Text style={styles.preview} numberOfLines={2}>
+              {note.markdown || 'No content'}
+            </Text>
+            <Text style={styles.date}>{formatUpdatedAt(note.updatedAt)}</Text>
+          </View>
+        </TouchableOpacity>
+        <View style={styles.menuWrapper}>
+          <ThreeDotMenu items={menuItems} />
+        </View>
+      </View>
 
       {note.audioFile && (
         <View style={styles.audioSection}>
@@ -37,15 +66,6 @@ const NoteItem: React.FC<NoteItemProps> = ({note, onEdit, onDelete, onDeleteAudi
           />
         </View>
       )}
-
-      <View style={styles.actions}>
-        <TouchableOpacity style={styles.editButton} onPress={() => onEdit(note)}>
-          <Text style={styles.editButtonText}>Edit</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.deleteButton} onPress={() => onDelete(note.id)}>
-          <Text style={styles.deleteButtonText}>Delete</Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 };
@@ -54,62 +74,50 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: '#1a1a1a',
     borderRadius: 12,
-    marginVertical: 8,
+    marginVertical: 6,
     borderWidth: 1,
     borderColor: '#333333',
+    overflow: 'hidden',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
   },
   content: {
-    padding: 16,
+    flex: 1,
+  },
+  contentInner: {
+    padding: 14,
   },
   title: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#ffffff',
-    marginBottom: 8,
+    color: 'white',
+    marginBottom: 6,
   },
   preview: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#a1a1aa',
-    lineHeight: 20,
-    marginBottom: 8,
+    lineHeight: 18,
+    marginBottom: 6,
   },
   date: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#6b7280',
   },
+  menuWrapper: {
+    paddingTop: 8,
+    paddingRight: 8,
+  },
   audioSection: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingBottom: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#333333',
+    marginTop: 4,
   },
   audioPlayer: {
     marginBottom: 0,
-  },
-  actions: {
-    flexDirection: 'row',
-    borderTopWidth: 1,
-    borderTopColor: '#333333',
-  },
-  editButton: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderRightWidth: 1,
-    borderRightColor: '#333333',
-  },
-  editButtonText: {
-    color: '#8b5cf6',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  deleteButton: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  deleteButtonText: {
-    color: '#ef4444',
-    fontSize: 14,
-    fontWeight: '500',
   },
 });
 

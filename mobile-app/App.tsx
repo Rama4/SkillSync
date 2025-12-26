@@ -27,7 +27,7 @@ function App(): React.JSX.Element {
             headerStyle: {
               backgroundColor: '#1a1a1a',
             },
-            headerTintColor: '#ffffff',
+            headerTintColor: 'white',
             headerTitleStyle: {
               fontWeight: '600',
             },

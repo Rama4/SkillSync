@@ -202,10 +202,10 @@ const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(
           <Text style={styles.headerTitle}>{note ? 'Edit Note' : 'New Note'}</Text>
           <View style={styles.headerButtons}>
             <TouchableOpacity style={styles.headerSaveButton} onPress={handleSave}>
-              <CheckIcon width={16} height={16} color="#ffffff" />
+              <CheckIcon width={16} height={16} color="white" />
             </TouchableOpacity>
             <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
-              <CloseIcon width={16} height={16} color="#ffffff" />
+              <CloseIcon width={16} height={16} color="white" />
             </TouchableOpacity>
           </View>
         </View>
@@ -293,11 +293,11 @@ const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(
 
           <View style={styles.actions}>
             <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-              <CheckIcon width={16} height={16} color="#ffffff" />
+              <CheckIcon width={16} height={16} color="white" />
               <Text style={styles.saveButtonText}>Save</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.cancelActionButton} onPress={onCancel}>
-              <CloseIcon width={16} height={16} color="#ffffff" />
+              <CloseIcon width={16} height={16} color="white" />
               <Text style={styles.cancelActionButtonText}>Cancel</Text>
             </TouchableOpacity>
           </View>
@@ -319,20 +319,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#333333',
+    backgroundColor: '#1a1a1a',
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#ffffff',
+    color: 'white',
   },
   headerButtons: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 12,
   },
   headerSaveButton: {
     width: 32,
@@ -343,7 +344,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerSaveButtonText: {
-    color: '#ffffff',
+    color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -360,15 +361,15 @@ const styles = StyleSheet.create({
     color: '#a1a1aa',
   },
   form: {
-    padding: 20,
+    padding: 16,
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   label: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
-    color: '#ffffff',
+    color: 'white',
     marginBottom: 8,
   },
   titleInput: {
@@ -376,26 +377,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#333333',
     borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#ffffff',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 15,
+    color: 'white',
   },
   markdownInput: {
     backgroundColor: '#1a1a1a',
     borderWidth: 1,
     borderColor: '#333333',
     borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 14,
-    color: '#ffffff',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 13,
+    color: 'white',
     fontFamily: 'monospace',
     height: 100,
-    textAlignVertical: 'top', // <--- Align text to top on Android
+    textAlignVertical: 'top',
   },
   audioSection: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   audioPlayerContainer: {
     marginBottom: 16,
@@ -409,7 +410,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   deleteAudioButtonText: {
-    color: '#ffffff',
+    color: 'white',
     fontSize: 14,
     fontWeight: '500',
   },
@@ -437,7 +438,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   recordingText: {
-    color: '#ffffff',
+    color: 'white',
     fontSize: 16,
     fontWeight: '500',
     fontFamily: 'monospace',
@@ -448,7 +449,7 @@ const styles = StyleSheet.create({
   recordButton: {
     width: '100%',
     backgroundColor: '#8b5cf6',
-    paddingVertical: 16,
+    paddingVertical: 12,
     borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
@@ -491,16 +492,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   recordButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
+    color: 'white',
+    fontSize: 14,
     fontWeight: '600',
   },
   actions: {
-    gap: 12,
+    gap: 10,
   },
   saveButton: {
-    backgroundColor: 'green',
-    paddingVertical: 16,
+    backgroundColor: '#10b981',
+    paddingVertical: 12,
     borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
@@ -511,13 +512,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#6b7280',
   },
   saveButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
+    color: 'white',
+    fontSize: 14,
     fontWeight: '600',
   },
   cancelActionButton: {
     backgroundColor: '#374151',
-    paddingVertical: 16,
+    paddingVertical: 12,
     borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
@@ -525,8 +526,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   cancelActionButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
+    color: 'white',
+    fontSize: 14,
     fontWeight: '500',
   },
 });

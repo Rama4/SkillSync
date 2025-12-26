@@ -65,7 +65,7 @@ const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
               onPress={handleCreate}
               disabled={isCreating}>
               {isCreating ? (
-                <ActivityIndicator size="small" color="#ffffff" />
+                <ActivityIndicator size="small" color="white" />
               ) : (
                 <Text style={styles.createButtonText}>Create</Text>
               )}
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: 'white',
     marginBottom: 8,
   },
   subtitle: {
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    color: '#ffffff',
+    color: 'white',
     marginBottom: 24,
   },
   buttons: {
@@ -135,12 +135,12 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   cancelButtonText: {
-    color: '#ffffff',
+    color: 'white',
     fontSize: 16,
     fontWeight: '500',
   },
   createButtonText: {
-    color: '#ffffff',
+    color: 'white',
     fontSize: 16,
     fontWeight: '600',
   },

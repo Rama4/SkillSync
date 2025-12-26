@@ -6,6 +6,7 @@ import {audioRecorder} from '@/native/AudioRecorder';
 import NoteItem from '@/components/NoteItem';
 import NoteEditor, {NoteEditorHandle} from './NoteEditor';
 import {formatDuration} from '@/utils/noteUtils';
+import PlusIcon from '@/assets/icons/plus.svg';
 
 export interface NotesPanelHandle {
   saveCurrentNote: () => Promise<void>;
@@ -26,7 +27,7 @@ const NotesPanel = forwardRef<NotesPanelHandle, NotesPanelProps>(
     const [showEditor, setShowEditor] = useState<boolean>(false);
     const [isQuickRecording, setIsQuickRecording] = useState<boolean>(false);
     const [recordingDuration, setRecordingDuration] = useState<number>(0);
-    
+
     // Ref for the NoteEditor
     const noteEditorRef = useRef<NoteEditorHandle>(null);
 
@@ -44,234 +45,242 @@ const NotesPanel = forwardRef<NotesPanelHandle, NotesPanelProps>(
       onEditorStateChange?.(showEditor);
     }, [showEditor, onEditorStateChange]);
 
-  const loadNotes = useCallback(async () => {
-    setLoading(true);
-    try {
-      const loadedNotes = await notesService.getNotes(topicId, lessonId);
-      setNotes(loadedNotes);
-    } catch (error) {
-      console.error('Error loading notes:', error);
-      Alert.alert('Error', 'Failed to load notes');
-    } finally {
-      setLoading(false);
-    }
-  }, [topicId, lessonId]);
-
-  useEffect(() => {
-    loadNotes();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [topicId, lessonId]);
-
-  useEffect(() => {
-    if (isQuickRecording) {
-      const removeProgressListener = audioRecorder.onRecordingProgress(event => {
-        setRecordingDuration(event.duration);
-      });
-
-      return () => {
-        removeProgressListener();
-      };
-    }
-  }, [isQuickRecording]);
-
-  const generateAudioNoteTitle = useCallback(
-    (existingNotes: Note[]): string => {
-      const audioNotes = existingNotes.filter(n => n.audioFile);
-      const recordingNumber = audioNotes.length + 1;
-      return lessonTitle ? `${lessonTitle} ${recordingNumber}` : `Recording ${recordingNumber}`;
-    },
-    [lessonTitle],
-  );
-
-  const handleQuickRecord = useCallback(async () => {
-    try {
-      // Generate unique filename for the recording
-      const filename = `note_${Date.now()}.m4a`;
-
-      const result = await audioRecorder.startRecording({
-        filename,
-        sampleRate: 44100,
-        bitRate: 128000,
-        channels: 1,
-      });
-
-      if (result.success) {
-        setIsQuickRecording(true);
-        setRecordingDuration(0);
+    const loadNotes = useCallback(async () => {
+      setLoading(true);
+      try {
+        const loadedNotes = await notesService.getNotes(topicId, lessonId);
+        setNotes(loadedNotes);
+      } catch (error) {
+        console.error('Error loading notes:', error);
+        Alert.alert('Error', 'Failed to load notes');
+      } finally {
+        setLoading(false);
       }
-    } catch (error: any) {
-      console.error('Error starting quick recording:', error);
-      Alert.alert(
-        'Recording Error',
-        error.message || 'Failed to start recording. Please check microphone permissions.',
+    }, [topicId, lessonId]);
+
+    useEffect(() => {
+      loadNotes();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [topicId, lessonId]);
+
+    useEffect(() => {
+      if (isQuickRecording) {
+        const removeProgressListener = audioRecorder.onRecordingProgress(event => {
+          setRecordingDuration(event.duration);
+        });
+
+        return () => {
+          removeProgressListener();
+        };
+      }
+    }, [isQuickRecording]);
+
+    const generateAudioNoteTitle = useCallback(
+      (existingNotes: Note[]): string => {
+        const audioNotes = existingNotes.filter(n => n.audioFile);
+        const recordingNumber = audioNotes.length + 1;
+        return lessonTitle ? `${lessonTitle} ${recordingNumber}` : `Recording ${recordingNumber}`;
+      },
+      [lessonTitle],
+    );
+
+    const handleQuickRecord = useCallback(async () => {
+      try {
+        // Generate unique filename for the recording
+        const filename = `note_${Date.now()}.m4a`;
+
+        const result = await audioRecorder.startRecording({
+          filename,
+          sampleRate: 44100,
+          bitRate: 128000,
+          channels: 1,
+        });
+
+        if (result.success) {
+          setIsQuickRecording(true);
+          setRecordingDuration(0);
+        }
+      } catch (error: any) {
+        console.error('Error starting quick recording:', error);
+        Alert.alert(
+          'Recording Error',
+          error.message || 'Failed to start recording. Please check microphone permissions.',
+        );
+      }
+    }, []);
+
+    const stopQuickRecording = useCallback(async () => {
+      if (!isQuickRecording) {
+        return;
+      }
+
+      try {
+        const result = await audioRecorder.stopRecording();
+
+        if (result.success && result.filePath) {
+          // Get existing notes to generate title (use current notes state)
+          const existingNotes = notesService.getNotes(topicId, lessonId);
+          const generatedTitle = generateAudioNoteTitle(existingNotes);
+
+          // Create note object with all required fields
+          const newNote: Note = {
+            id: `note_${Date.now()}`,
+            lessonId,
+            title: generatedTitle,
+            markdown: '',
+            audioFile: result.filePath,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+
+          // Save via notesService.saveNote()
+          notesService.saveNote(topicId, lessonId, newNote);
+          console.log('Quick recorded note saved:', newNote);
+
+          // Refresh notes list
+          loadNotes();
+        }
+
+        setIsQuickRecording(false);
+        setRecordingDuration(0);
+      } catch (error: any) {
+        console.error('Error stopping quick recording:', error);
+        Alert.alert('Error', error.message || 'Failed to stop recording');
+        setIsQuickRecording(false);
+      }
+    }, [isQuickRecording, topicId, lessonId, generateAudioNoteTitle, loadNotes]);
+
+    const handleSave = useCallback(() => {
+      setShowEditor(false);
+      setEditingNote(null);
+      loadNotes();
+    }, [loadNotes]);
+
+    const handleEdit = useCallback((note: Note) => {
+      setEditingNote(note);
+      setShowEditor(true);
+    }, []);
+
+    const handleDelete = useCallback(
+      async (noteId: string) => {
+        Alert.alert('Delete Note', 'Are you sure you want to delete this note?', [
+          {text: 'Cancel', style: 'cancel'},
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await notesService.deleteNote(topicId, lessonId, noteId);
+                loadNotes();
+              } catch (error) {
+                console.error('Error deleting note:', error);
+                Alert.alert('Error', 'Failed to delete note');
+              }
+            },
+          },
+        ]);
+      },
+      [topicId, lessonId, loadNotes],
+    );
+
+    const handleDeleteAudio = useCallback(
+      async (noteId: string) => {
+        Alert.alert(
+          'Delete Audio',
+          'Are you sure you want to delete the audio recording? The text note will be kept.',
+          [
+            {text: 'Cancel', style: 'cancel'},
+            {
+              text: 'Delete Audio',
+              style: 'destructive',
+              onPress: async () => {
+                try {
+                  await notesService.deleteNoteAudio(topicId, lessonId, noteId);
+                  loadNotes();
+                } catch (error) {
+                  console.error('Error deleting audio:', error);
+                  Alert.alert('Error', 'Failed to delete audio');
+                }
+              },
+            },
+          ],
+        );
+      },
+      [topicId, lessonId, loadNotes],
+    );
+
+    const handleNewNote = useCallback(() => {
+      setEditingNote(null);
+      setShowEditor(true);
+    }, []);
+
+    if (showEditor) {
+      return (
+        <NoteEditor
+          ref={noteEditorRef}
+          note={editingNote}
+          topicId={topicId}
+          lessonId={lessonId}
+          lessonTitle={lessonTitle}
+          onSave={handleSave}
+          onCancel={() => {
+            setShowEditor(false);
+            setEditingNote(null);
+          }}
+        />
       );
     }
-  }, []);
 
-  const stopQuickRecording = useCallback(async () => {
-    if (!isQuickRecording) return;
-
-    try {
-      const result = await audioRecorder.stopRecording();
-
-      if (result.success && result.filePath) {
-        // Get existing notes to generate title (use current notes state)
-        const existingNotes = notesService.getNotes(topicId, lessonId);
-        const generatedTitle = generateAudioNoteTitle(existingNotes);
-
-        // Create note object with all required fields
-        const newNote: Note = {
-          id: `note_${Date.now()}`,
-          lessonId,
-          title: generatedTitle,
-          markdown: '',
-          audioFile: result.filePath,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-
-        // Save via notesService.saveNote()
-        notesService.saveNote(topicId, lessonId, newNote);
-        console.log('Quick recorded note saved:', newNote);
-
-        // Refresh notes list
-        loadNotes();
-      }
-
-      setIsQuickRecording(false);
-      setRecordingDuration(0);
-    } catch (error: any) {
-      console.error('Error stopping quick recording:', error);
-      Alert.alert('Error', error.message || 'Failed to stop recording');
-      setIsQuickRecording(false);
-    }
-  }, [isQuickRecording, topicId, lessonId, generateAudioNoteTitle, loadNotes]);
-
-  const handleSave = useCallback(() => {
-    setShowEditor(false);
-    setEditingNote(null);
-    loadNotes();
-  }, [loadNotes]);
-
-  const handleEdit = useCallback((note: Note) => {
-    setEditingNote(note);
-    setShowEditor(true);
-  }, []);
-
-  const handleDelete = useCallback(
-    async (noteId: string) => {
-      Alert.alert('Delete Note', 'Are you sure you want to delete this note?', [
-        {text: 'Cancel', style: 'cancel'},
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await notesService.deleteNote(topicId, lessonId, noteId);
-              loadNotes();
-            } catch (error) {
-              console.error('Error deleting note:', error);
-              Alert.alert('Error', 'Failed to delete note');
-            }
-          },
-        },
-      ]);
-    },
-    [topicId, lessonId, loadNotes],
-  );
-
-  const handleDeleteAudio = useCallback(
-    async (noteId: string) => {
-      Alert.alert('Delete Audio', 'Are you sure you want to delete the audio recording? The text note will be kept.', [
-        {text: 'Cancel', style: 'cancel'},
-        {
-          text: 'Delete Audio',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await notesService.deleteNoteAudio(topicId, lessonId, noteId);
-              loadNotes();
-            } catch (error) {
-              console.error('Error deleting audio:', error);
-              Alert.alert('Error', 'Failed to delete audio');
-            }
-          },
-        },
-      ]);
-    },
-    [topicId, lessonId, loadNotes],
-  );
-
-  const handleNewNote = useCallback(() => {
-    setEditingNote(null);
-    setShowEditor(true);
-  }, []);
-
-  if (showEditor) {
     return (
-      <NoteEditor
-        ref={noteEditorRef}
-        note={editingNote}
-        topicId={topicId}
-        lessonId={lessonId}
-        lessonTitle={lessonTitle}
-        onSave={handleSave}
-        onCancel={() => {
-          setShowEditor(false);
-          setEditingNote(null);
-        }}
-      />
-    );
-  }
-
-  return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Notes</Text>
-        <View style={styles.headerButtons}>
-          {isQuickRecording ? (
-            <TouchableOpacity style={styles.stopRecordingButton} onPress={stopQuickRecording}>
-              <Text style={styles.stopRecordingButtonText}>⏹ Stop ({formatDuration(recordingDuration)})</Text>
-            </TouchableOpacity>
-          ) : (
-            <>
-              <TouchableOpacity style={styles.quickRecordButton} onPress={handleQuickRecord}>
-                <Text style={styles.quickRecordButtonText}>🎤 Quick Record</Text>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Notes</Text>
+          <View style={styles.headerButtons}>
+            {isQuickRecording ? (
+              <TouchableOpacity style={styles.stopRecordingButton} onPress={stopQuickRecording}>
+                <Text style={styles.stopRecordingButtonText}>⏹ Stop ({formatDuration(recordingDuration)})</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.newButton} onPress={handleNewNote}>
-                <Text style={styles.newButtonText}>+ New Note</Text>
-              </TouchableOpacity>
-            </>
-          )}
+            ) : (
+              <>
+                <TouchableOpacity style={styles.quickRecordButton} onPress={handleQuickRecord}>
+                  <Text style={styles.quickRecordButtonText}>🎤 Quick Record</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.newButton} onPress={handleNewNote}>
+                  <PlusIcon color="white" width={14} height={14} />
+                  <Text style={styles.newButtonText}>New Note</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
         </View>
+
+        {loading ? (
+          <View style={styles.centerContainer}>
+            <ActivityIndicator size="large" color="#8b5cf6" />
+          </View>
+        ) : notes.length === 0 ? (
+          <View style={styles.centerContainer}>
+            <Text style={styles.emptyText}>No notes yet. Create your first note!</Text>
+          </View>
+        ) : (
+          <ScrollView style={styles.notesList} showsVerticalScrollIndicator={false}>
+            {notes.map(note => (
+              <NoteItem
+                key={note.id}
+                note={note}
+                topicId={topicId}
+                lessonId={lessonId}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onDeleteAudio={handleDeleteAudio}
+              />
+            ))}
+          </ScrollView>
+        )}
       </View>
-
-      {loading ? (
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#8b5cf6" />
-        </View>
-      ) : notes.length === 0 ? (
-        <View style={styles.centerContainer}>
-          <Text style={styles.emptyText}>No notes yet. Create your first note!</Text>
-        </View>
-      ) : (
-        <ScrollView style={styles.notesList} showsVerticalScrollIndicator={false}>
-          {notes.map(note => (
-            <NoteItem
-              key={note.id}
-              note={note}
-              topicId={topicId}
-              lessonId={lessonId}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onDeleteAudio={handleDeleteAudio}
-            />
-          ))}
-        </ScrollView>
-      )}
-    </View>
-  );
-});
+    );
+  },
+);
 
 const styles = StyleSheet.create({
   container: {
@@ -282,15 +291,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#333333',
+    backgroundColor: '#1a1a1a',
   },
   title: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#ffffff',
+    color: 'white',
   },
   headerButtons: {
     flexDirection: 'row',
@@ -302,33 +312,39 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   quickRecordButtonText: {
-    color: '#ffffff',
-    fontSize: 12,
+    color: 'white',
+    fontSize: 13,
     fontWeight: '500',
   },
   stopRecordingButton: {
     backgroundColor: '#dc2626',
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
   },
   stopRecordingButtonText: {
-    color: '#ffffff',
-    fontSize: 12,
+    color: 'white',
+    fontSize: 13,
     fontWeight: '500',
     fontFamily: 'monospace',
   },
   newButton: {
     backgroundColor: '#8b5cf6',
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   newButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
+    color: 'white',
+    fontSize: 13,
     fontWeight: '500',
   },
   centerContainer: {
@@ -339,12 +355,13 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     color: '#a1a1aa',
-    fontSize: 16,
+    fontSize: 14,
     textAlign: 'center',
   },
   notesList: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
+    paddingTop: 8,
   },
 });
 
