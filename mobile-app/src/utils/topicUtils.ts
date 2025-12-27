@@ -2,6 +2,9 @@ import {TopicMeta} from '../../../lib/types';
 import RNFS from 'react-native-fs';
 import {DOWNLOAD_DATA_PATH, EXTERNAL_DATA_PATH} from '@/utils/constants';
 import {createNestedFolders, isFileOrFolderExists, getFullPath} from '@/utils/fsUtils';
+import {databaseService} from '@/services/database';
+import {deleteLessonFromFileSystem} from '@/utils/lessonUtils';
+import {notesService} from '@/services/notesService';
 
 /**
  * Generate a URL-friendly slug from a string
@@ -162,5 +165,79 @@ export async function createTopicFolderStructure(topic: TopicMeta): Promise<void
     console.error('Failed to create topic folder structure:', error);
     // Don't throw - allow topic creation to continue even if folder creation fails
     // The topic will still be saved in the database
+  }
+}
+
+/**
+ * Remove topic from topics.json index file
+ */
+async function removeTopicFromIndex(topicId: string, dataPath: string): Promise<void> {
+  try {
+    const topicsJsonPath = getFullPath(dataPath, 'topics.json');
+    const topicsJsonExists = await isFileOrFolderExists(topicsJsonPath);
+    
+    if (!topicsJsonExists) {
+      return; // No index file, nothing to update
+    }
+    
+    const content = await RNFS.readFile(topicsJsonPath, 'utf8');
+    const topicsIndex = JSON.parse(content);
+    
+    // Remove topic from index
+    topicsIndex.topics = topicsIndex.topics.filter((t: any) => t.id !== topicId);
+    topicsIndex.lastUpdated = new Date().toISOString().split('T')[0];
+    
+    // Write back to file
+    await RNFS.writeFile(topicsJsonPath, JSON.stringify(topicsIndex, null, 2), 'utf8');
+    console.log('Removed topic from topics.json index');
+  } catch (error) {
+    console.error('Failed to remove topic from topics.json:', error);
+    // Don't throw - allow deletion to continue
+  }
+}
+
+/**
+ * Delete topic folder and files from file system
+ * Also deletes all lessons and notes associated with the topic
+ */
+export async function deleteTopicFromFileSystem(topicId: string): Promise<void> {
+  try {
+    // Find accessible data path
+    const dataPath = await findAccessibleDataPath();
+    
+    // Get topic and lessons from database before deletion
+    const topic = await databaseService.getTopic(topicId);
+    if (!topic) {
+      console.log('Topic not found in database, skipping file system deletion');
+      return;
+    }
+    
+    const lessons = await databaseService.getLessonsByTopic(topicId);
+    
+    // Delete all lesson files
+    for (const lesson of lessons) {
+      await deleteLessonFromFileSystem(lesson);
+      
+      // Delete all notes for this lesson
+      const notes = notesService.getNotes(topicId, lesson.id);
+      for (const note of notes) {
+        notesService.deleteNote(topicId, lesson.id, note.id);
+      }
+    }
+    
+    // Delete topic folder
+    const topicDir = getFullPath(dataPath, topicId);
+    const topicDirExists = await isFileOrFolderExists(topicDir);
+    
+    if (topicDirExists) {
+      await RNFS.unlink(topicDir);
+      console.log('Deleted topic folder from file system:', topicDir);
+    }
+    
+    // Remove from topics.json index
+    await removeTopicFromIndex(topicId, dataPath);
+  } catch (error) {
+    console.error('Failed to delete topic from file system:', error);
+    // Don't throw - allow deletion to continue even if file deletion fails
   }
 }

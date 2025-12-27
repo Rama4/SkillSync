@@ -2,7 +2,7 @@ import {Lesson, Note, LessonSection} from '../../../lib/types';
 import {slugify} from '@/utils/topicUtils';
 import RNFS from 'react-native-fs';
 import {DOWNLOAD_DATA_PATH, EXTERNAL_DATA_PATH} from '@/utils/constants';
-import {isFileOrFolderExists, getFullPath} from '@/utils/fsUtils';
+import {isFileOrFolderExists, getFullPath, deleteFile} from '@/utils/fsUtils';
 
 /**
  * Create a lesson from a note
@@ -127,5 +127,32 @@ export async function saveLessonToFileSystem(lesson: Lesson): Promise<void> {
   } catch (error) {
     console.error('Failed to save lesson to file system:', error);
     // Don't throw - allow lesson creation to continue even if file save fails
+  }
+}
+
+/**
+ * Delete lesson JSON file from the file system
+ */
+export async function deleteLessonFromFileSystem(lesson: Lesson): Promise<void> {
+  try {
+    // Find accessible data path
+    const dataPath = await findAccessibleDataPath();
+    
+    // Create lesson file path: {dataPath}/{topicId}/lessons/{lessonId}.json
+    const topicDir = getFullPath(dataPath, lesson.topic);
+    const lessonsDir = getFullPath(topicDir, 'lessons');
+    const lessonFilePath = getFullPath(lessonsDir, `${lesson.id}.json`);
+    
+    // Check if file exists before deleting
+    const fileExists = await isFileOrFolderExists(lessonFilePath);
+    if (fileExists) {
+      await deleteFile(lessonFilePath);
+      console.log('Deleted lesson from file system:', lessonFilePath);
+    } else {
+      console.log('Lesson file does not exist, skipping deletion:', lessonFilePath);
+    }
+  } catch (error) {
+    console.error('Failed to delete lesson from file system:', error);
+    // Don't throw - allow deletion to continue even if file deletion fails
   }
 }

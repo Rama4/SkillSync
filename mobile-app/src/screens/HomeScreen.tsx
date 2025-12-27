@@ -1,5 +1,5 @@
 import React, {useState, useEffect, useCallback, useMemo} from 'react';
-import {View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Alert} from 'react-native';
+import {View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Alert, TextInput} from 'react-native';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {useDebouncedCallback} from 'use-debounce';
 import {TopicMeta, Note} from '../../../lib/types';
@@ -9,9 +9,10 @@ import {syncService} from '@/services/syncService';
 import CreateTopicModal from '@/components/CreateTopicModal';
 import QuickRecordModal from '@/components/QuickRecordModal';
 import FloatingActionButton from '@/components/FloatingActionButton';
-import {createEmptyTopic, createTopicFolderStructure} from '@/utils/topicUtils';
+import {createEmptyTopic, createTopicFolderStructure, deleteTopicFromFileSystem} from '@/utils/topicUtils';
 import ReloadIcon from '@/assets/icons/reload.svg';
 import {createMMKV} from 'react-native-mmkv';
+import {notesService} from '@/services/notesService';
 
 const recentTopicsStorage = createMMKV({
   id: 'recent-topics-storage',
@@ -29,6 +30,8 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
   const [showQuickRecordModal, setShowQuickRecordModal] = useState<boolean>(false);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [isEditMode, setIsEditMode] = useState<boolean>(false);
+  const [editingTitles, setEditingTitles] = useState<Record<string, string>>({});
 
   // Memoize topics list for performance
   const memoizedTopics = useMemo(() => topics, [topics]);
@@ -157,6 +160,114 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
     }
   };
 
+  const handleToggleEditMode = useCallback(() => {
+    if (isEditMode) {
+      // Exiting edit mode - cancel all edits
+      setEditingTitles({});
+    } else {
+      // Entering edit mode - initialize editing titles
+      const initialTitles: Record<string, string> = {};
+      topics.forEach(topic => {
+        initialTitles[topic.id] = topic.title;
+      });
+      setEditingTitles(initialTitles);
+    }
+    setIsEditMode(!isEditMode);
+  }, [isEditMode, topics]);
+
+  const handleSaveAllChanges = useCallback(async () => {
+    try {
+      let hasChanges = false;
+
+      // Save all topic title changes
+      for (const topic of topics) {
+        const newTitle = editingTitles[topic.id];
+        if (newTitle && newTitle.trim() && newTitle !== topic.title) {
+          const trimmedTitle = newTitle.trim();
+          const updatedTopic: TopicMeta = {
+            ...topic,
+            title: trimmedTitle,
+            lastUpdated: new Date().toISOString().split('T')[0],
+          };
+          await databaseService.saveTopic(updatedTopic);
+          await createTopicFolderStructure(updatedTopic);
+          hasChanges = true;
+        }
+      }
+
+      if (hasChanges) {
+        await loadTopics();
+        Alert.alert('Success', 'Topics updated successfully');
+      }
+
+      setIsEditMode(false);
+      setEditingTitles({});
+    } catch (error) {
+      console.error('Failed to save topic changes:', error);
+      Alert.alert('Error', 'Failed to save changes');
+    }
+  }, [topics, editingTitles, loadTopics]);
+
+  const handleCancelEdit = useCallback(() => {
+    setEditingTitles({});
+    setIsEditMode(false);
+  }, []);
+
+  const handleDeleteTopic = useCallback(
+    async (topicId: string) => {
+      const topic = topics.find(t => t.id === topicId);
+      if (!topic) return;
+
+      Alert.alert(
+        'Delete Topic',
+        `Are you sure you want to delete "${topic.title}"? This will also delete all lessons and notes in this topic.`,
+        [
+          {text: 'Cancel', style: 'cancel'},
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                // Get all lessons for this topic
+                const lessons = await databaseService.getLessonsByTopic(topicId);
+
+                // Delete all notes for all lessons
+                for (const lesson of lessons) {
+                  const notes = notesService.getNotes(topicId, lesson.id);
+                  for (const note of notes) {
+                    notesService.deleteNote(topicId, lesson.id, note.id);
+                  }
+                }
+
+                // Delete from file system (includes lessons and notes cleanup)
+                await deleteTopicFromFileSystem(topicId);
+
+                // Delete from database (cascade deletes lessons)
+                await databaseService.deleteTopic(topicId);
+
+                // Refresh topics list
+                await loadTopics();
+
+                Alert.alert('Success', 'Topic deleted successfully');
+              } catch (error) {
+                console.error('Failed to delete topic:', error);
+                Alert.alert('Error', 'Failed to delete topic');
+              }
+            },
+          },
+        ],
+      );
+    },
+    [topics, loadTopics],
+  );
+
+  const handleTitleChange = useCallback((topicId: string, newTitle: string) => {
+    setEditingTitles(prev => ({
+      ...prev,
+      [topicId]: newTitle,
+    }));
+  }, []);
+
   if (isInitializing) {
     return (
       <View style={styles.centerContainer}>
@@ -171,21 +282,41 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>📚 SkillSync</Text>
-          <Text style={styles.subtitle}>Choose a topic to start learning</Text>
+          <View style={styles.headerTopRow}>
+            <View style={styles.headerLeft}>
+              <Text style={styles.title}>📚 SkillSync</Text>
+              <Text style={styles.subtitle}>Choose a topic to start learning</Text>
+            </View>
+            <TouchableOpacity style={styles.editButton} onPress={handleToggleEditMode}>
+              <Text style={styles.editButtonText}>{isEditMode ? '✕' : '✏️'}</Text>
+            </TouchableOpacity>
+          </View>
           <View style={styles.headerButtons}>
-            <TouchableOpacity style={styles.createButton} onPress={() => setShowCreateModal(true)}>
-              <Text style={styles.createButtonText}>+ New Topic</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.settingsButton} onPress={goToSettings}>
-              <Text style={styles.settingsButtonText}>⚙️ Settings</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.settingsButton, isSyncing && styles.syncingButton]}
-              onPress={handleReloadContent}
-              disabled={isSyncing}>
-              <ReloadIcon width={20} height={20} color={isSyncing ? '#666666' : 'white'} />
-            </TouchableOpacity>
+            {isEditMode ? (
+              <>
+                <TouchableOpacity style={styles.saveButton} onPress={handleSaveAllChanges}>
+                  <Text style={styles.saveButtonText}>Save</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.cancelButton} onPress={handleCancelEdit}>
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <TouchableOpacity style={styles.createButton} onPress={() => setShowCreateModal(true)}>
+                  <Text style={styles.createButtonText}>+ New Topic</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.settingsButton} onPress={goToSettings}>
+                  <Text style={styles.settingsButtonText}>⚙️ Settings</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.settingsButton, isSyncing && styles.syncingButton]}
+                  onPress={handleReloadContent}
+                  disabled={isSyncing}>
+                  <ReloadIcon width={20} height={20} color={isSyncing ? '#666666' : 'white'} />
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </View>
 
@@ -202,22 +333,47 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
           <View>
             <Text style={styles.sectionTitle}>Available Topics</Text>
             {memoizedTopics.map(topic => (
-              <TouchableOpacity key={topic.id} style={styles.topicCard} onPress={() => navigateToTopic(topic)}>
-                <View style={styles.topicHeader}>
-                  <Text style={styles.topicIcon}>{topic.icon}</Text>
-                  <View style={styles.topicInfo}>
-                    <Text style={styles.topicTitle}>{topic.title}</Text>
-                    <Text style={styles.topicDescription}>{topic.description}</Text>
+              <View key={topic.id} style={styles.topicCard}>
+                <TouchableOpacity
+                  style={styles.topicCardContent}
+                  onPress={() => !isEditMode && navigateToTopic(topic)}
+                  disabled={isEditMode}>
+                  <View style={styles.topicHeader}>
+                    <Text style={styles.topicIcon}>{topic.icon}</Text>
+                    <View style={styles.topicInfo}>
+                      {isEditMode ? (
+                        <TextInput
+                          style={styles.topicTitleInput}
+                          value={editingTitles[topic.id] || topic.title}
+                          onChangeText={newTitle => handleTitleChange(topic.id, newTitle)}
+                          placeholder="Topic title"
+                          placeholderTextColor="#6b7280"
+                        />
+                      ) : (
+                        <Text style={styles.topicTitle}>{topic.title}</Text>
+                      )}
+                      <Text style={styles.topicDescription}>{topic.description}</Text>
+                    </View>
                   </View>
-                </View>
-                <View style={styles.topicMeta}>
-                  <Text style={styles.lessonCount}>
-                    {topic.lessons.length} lesson
-                    {topic.lessons.length !== 1 ? 's' : ''}
-                  </Text>
-                  <Text style={styles.arrow}>→</Text>
-                </View>
-              </TouchableOpacity>
+                  {!isEditMode && (
+                    <View style={styles.topicMeta}>
+                      <Text style={styles.lessonCount}>
+                        {topic.lessons.length} lesson
+                        {topic.lessons.length !== 1 ? 's' : ''}
+                      </Text>
+                      <Text style={styles.arrow}>→</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+                {isEditMode && (
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => handleDeleteTopic(topic.id)}
+                    hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+                    <Text style={styles.deleteButtonText}>🗑️</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             ))}
           </View>
         )}
@@ -279,8 +435,17 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   header: {
-    alignItems: 'center',
     marginBottom: 30,
+  },
+  headerTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  headerLeft: {
+    flex: 1,
+    alignItems: 'center',
   },
   title: {
     fontSize: 32,
@@ -291,12 +456,47 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: '#a1a1aa',
-    marginBottom: 16,
+  },
+  editButton: {
+    backgroundColor: '#8b5cf6',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    minWidth: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editButtonText: {
+    fontSize: 18,
+    color: 'white',
   },
   headerButtons: {
     flexDirection: 'row',
     gap: 12,
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveButton: {
+    backgroundColor: '#10b981',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  saveButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  cancelButton: {
+    backgroundColor: '#ef4444',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  cancelButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
   },
   createButton: {
     backgroundColor: '#8b5cf6',
@@ -332,10 +532,15 @@ const styles = StyleSheet.create({
   topicCard: {
     backgroundColor: '#1a1a1a',
     borderRadius: 16,
-    padding: 20,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: '#333333',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  topicCardContent: {
+    flex: 1,
+    padding: 20,
   },
   topicHeader: {
     flexDirection: 'row',
@@ -354,6 +559,26 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: 'white',
     marginBottom: 4,
+  },
+  topicTitleInput: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: 'white',
+    backgroundColor: '#0a0a0a',
+    borderWidth: 1,
+    borderColor: '#8b5cf6',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginBottom: 4,
+  },
+  deleteButton: {
+    padding: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteButtonText: {
+    fontSize: 20,
   },
   topicDescription: {
     fontSize: 14,

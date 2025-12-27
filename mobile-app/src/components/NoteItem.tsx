@@ -12,9 +12,16 @@ interface NoteItemProps {
   onEdit: (note: Note) => void;
   onDelete: (noteId: string) => void;
   onDeleteAudio: (noteId: string) => void;
+  disableClickToEdit?: boolean;
 }
 
-const NoteItem: React.FC<NoteItemProps> = ({note, onEdit, onDelete, onDeleteAudio}: NoteItemProps) => {
+const NoteItem: React.FC<NoteItemProps> = ({
+  note,
+  onEdit,
+  onDelete,
+  onDeleteAudio,
+  disableClickToEdit = false,
+}: NoteItemProps) => {
   const menuItems = [
     {
       label: 'Edit',
@@ -39,14 +46,14 @@ const NoteItem: React.FC<NoteItemProps> = ({note, onEdit, onDelete, onDeleteAudi
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.content} onPress={() => onEdit(note)} activeOpacity={0.7}>
+        <View style={styles.content}>
           <Text style={styles.title}>{note.title}</Text>
           {note?.markdown?.length > 0 && (
             <Text style={styles.preview} numberOfLines={2}>
               {note.markdown}
             </Text>
           )}
-        </TouchableOpacity>
+        </View>
         <View style={styles.menuWrapper}>
           <ThreeDotMenu items={menuItems} />
         </View>

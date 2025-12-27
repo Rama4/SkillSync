@@ -72,13 +72,13 @@ const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(
         // If no lessonId (topic-level note), trigger lesson creation callback
         if (!lessonId && onCreateLesson) {
           onCreateLesson(savedNote);
+          // Don't call onSave here - the parent will handle it via onCreateLesson
         } else if (lessonId) {
           // Save note normally if lessonId exists
           await notesService.saveNote(topicId, lessonId, savedNote);
           console.log('Note saved successfully:', savedNote);
+          onSave(savedNote);
         }
-
-        onSave(savedNote);
       } catch (error) {
         console.error('Error saving note:', error);
         Alert.alert('Error', 'Failed to save note');

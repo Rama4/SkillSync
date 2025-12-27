@@ -83,7 +83,7 @@ export const copyFile = async (sourcePath, destinationPath) => {
 
 export const deleteFile = async filePath => {
   try {
-    await RNFS.deleteFile(filePath);
+    await RNFS.unlink(filePath);
     console.log('file deleted successfully!');
     return true;
   } catch (error) {

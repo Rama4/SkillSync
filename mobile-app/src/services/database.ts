@@ -181,6 +181,25 @@ class DatabaseService {
     return lessons;
   }
 
+  async deleteLesson(lessonId: string): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    const deleteQuery = 'DELETE FROM lessons WHERE id = ?;';
+    await this.db.executeSql(deleteQuery, [lessonId]);
+  }
+
+  async deleteTopic(topicId: string): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    // First delete all lessons for this topic (cascade delete)
+    const deleteLessonsQuery = 'DELETE FROM lessons WHERE topicId = ?;';
+    await this.db.executeSql(deleteLessonsQuery, [topicId]);
+
+    // Then delete the topic
+    const deleteTopicQuery = 'DELETE FROM topics WHERE id = ?;';
+    await this.db.executeSql(deleteTopicQuery, [topicId]);
+  }
+
   // Sync metadata operations
   async updateSyncTimestamp(topicsIndexVersion: string = '1.0.0'): Promise<void> {
     if (!this.db) throw new Error('Database not initialized');
