@@ -34,29 +34,29 @@ export default function LessonSidebar({
   const { isLessonComplete } = useProgressStore();
 
   return (
-    <aside className="w-96 bg-surface-1 border-r border-surface-3 h-screen overflow-y-auto fixed left-0 top-16 pt-6 pb-20 hidden lg:block">
+    <aside className="w-64 bg-surface-1 border-r border-surface-3 h-screen overflow-y-auto fixed left-0 top-12 pt-3 pb-12 hidden lg:block">
       {/* Back to topic */}
-      <div className="px-4 mb-6">
+      <div className="px-3 mb-4">
         <Link
           href={`/topic/${topicId}`}
-          className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
+          className="flex items-center gap-1.5 text-gray-400 hover:text-white transition-colors text-xs"
         >
-          <ChevronLeft className="w-4 h-4" />
+          <ChevronLeft className="w-3 h-3" />
           Back to {topicTitle}
         </Link>
       </div>
 
       {/* Current lesson sections */}
-      <div className="px-4 mb-8">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+      <div className="px-3 mb-4">
+        <h3 className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">
           Current Lesson
         </h3>
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           {sections.map((section, index) => (
             <button
               key={section.id}
               onClick={() => onSectionChange(index)}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+              className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors ${
                 index === currentSectionIndex
                   ? "bg-primary-500/10 text-primary-400"
                   : "text-gray-400 hover:bg-surface-2 hover:text-white"
@@ -67,29 +67,29 @@ export default function LessonSidebar({
           ))}
           <button
             onClick={() => onSectionChange(sections.length)}
-            className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2 ${
+            className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors flex items-center gap-1.5 ${
               currentSectionIndex === sections.length
                 ? "bg-primary-500/10 text-primary-400"
                 : "text-gray-400 hover:bg-surface-2 hover:text-white"
             }`}
           >
-            <BookOpen className="w-4 h-4" />
+            <BookOpen className="w-3 h-3" />
             Quiz
           </button>
         </div>
       </div>
 
       {/* Notes Panel */}
-      <div className="px-4 mb-8 border-t border-surface-3 pt-6">
+      <div className="px-3 mb-4 border-t border-surface-3 pt-3">
         <NotesPanel topicId={topicId} lessonId={currentLessonId} />
       </div>
 
       {/* All lessons */}
-      <div className="px-4">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+      <div className="px-3">
+        <h3 className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">
           All Lessons
         </h3>
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           {lessons.map((lesson) => {
             const isComplete = isLessonComplete(topicId, lesson.id);
             const isCurrent = lesson.id === currentLessonId;
@@ -98,18 +98,18 @@ export default function LessonSidebar({
               <Link
                 key={lesson.id}
                 href={`/topic/${topicId}/lesson/${lesson.id}`}
-                className={`block px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                className={`block px-2 py-1.5 rounded text-xs transition-colors ${
                   isCurrent
                     ? "bg-primary-500/10 border border-primary-500/30"
                     : "hover:bg-surface-2"
                 }`}
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   {isComplete ? (
-                    <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
                   ) : (
                     <Circle
-                      className={`w-4 h-4 flex-shrink-0 ${
+                      className={`w-3 h-3 flex-shrink-0 ${
                         isCurrent ? "text-primary-400" : "text-gray-600"
                       }`}
                     />
@@ -122,8 +122,8 @@ export default function LessonSidebar({
                     {lesson.title}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 mt-1 ml-6 text-xs text-gray-600">
-                  <Clock className="w-3 h-3" />
+                <div className="flex items-center gap-1.5 mt-0.5 ml-4 text-[10px] text-gray-600">
+                  <Clock className="w-2.5 h-2.5" />
                   {lesson.duration}
                 </div>
               </Link>

@@ -128,105 +128,105 @@ export default function RegisterTopicPage() {
     <main className="min-h-screen">
       <Header />
       
-      <div className="pt-24 pb-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-4xl font-bold font-display text-white mb-2">
+      <div className="pt-16 pb-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-5xl mx-auto">
+          <h1 className="text-2xl font-bold font-display text-white mb-1">
             Register New Topic
           </h1>
-          <p className="text-gray-400 mb-8">
+          <p className="text-gray-400 text-sm mb-4">
             Create a new learning topic with videos, markdown files, and other media
           </p>
           
           {/* Success/Error Messages */}
           {success && (
-            <div className="mb-6 p-4 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400">
+            <div className="mb-4 p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-sm">
               {success}
             </div>
           )}
           
           {error && (
-            <div className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400">
+            <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
               {error}
             </div>
           )}
           
-          <form onSubmit={handleSubmit} className="space-y-8">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {/* Topic Metadata */}
-            <div className="card p-6 space-y-6">
-              <h2 className="text-xl font-semibold text-white">Topic Information</h2>
+            <div className="card p-4 space-y-3">
+              <h2 className="text-base font-semibold text-white">Topic Information</h2>
               
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-xs font-medium text-gray-300 mb-1.5">
                   Title *
                 </label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-4 py-2 bg-surface-2 border border-surface-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="w-full px-3 py-1.5 text-sm bg-surface-2 border border-surface-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="e.g., Language Modeling Fundamentals"
                   required
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-xs font-medium text-gray-300 mb-1.5">
                   Description
                 </label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  rows={3}
-                  className="w-full px-4 py-2 bg-surface-2 border border-surface-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  rows={2}
+                  className="w-full px-3 py-1.5 text-sm bg-surface-2 border border-surface-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="Describe what learners will learn in this topic..."
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-xs font-medium text-gray-300 mb-1.5">
                   Tags (comma-separated)
                 </label>
                 <input
                   type="text"
                   value={tags}
                   onChange={(e) => setTags(e.target.value)}
-                  className="w-full px-4 py-2 bg-surface-2 border border-surface-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="w-full px-3 py-1.5 text-sm bg-surface-2 border border-surface-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="machine-learning, ai, neural-networks"
                 />
               </div>
             </div>
             
             {/* Media Files Selection */}
-            <div className="card p-6 space-y-6">
+            <div className="card p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-white">Media Files</h2>
+                <h2 className="text-base font-semibold text-white">Media Files</h2>
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
                     value={scanDirectory}
                     onChange={(e) => setScanDirectory(e.target.value)}
                     placeholder="Directory name"
-                    className="px-3 py-1.5 bg-surface-2 border border-surface-3 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="px-2 py-1 text-xs bg-surface-2 border border-surface-3 rounded text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                   <button
                     type="button"
                     onClick={loadAvailableFiles}
                     disabled={scanning}
-                    className="px-4 py-1.5 bg-surface-2 border border-surface-3 rounded-lg text-white text-sm hover:bg-surface-3 transition-colors disabled:opacity-50"
+                    className="px-3 py-1 text-xs bg-surface-2 border border-surface-3 rounded text-white hover:bg-surface-3 transition-colors disabled:opacity-50"
                   >
-                    {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Scan'}
+                    {scanning ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Scan'}
                   </button>
                 </div>
               </div>
               
               {/* Available Files */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-3">
+                <label className="block text-xs font-medium text-gray-300 mb-2">
                   Available Files ({availableFiles.length})
                 </label>
-                <div className="max-h-48 overflow-y-auto space-y-2 border border-surface-3 rounded-lg p-3 bg-surface-1">
+                <div className="max-h-40 overflow-y-auto space-y-1.5 border border-surface-3 rounded-lg p-2 bg-surface-1">
                   {availableFiles.length === 0 ? (
-                    <p className="text-gray-500 text-sm text-center py-4">
+                    <p className="text-gray-500 text-xs text-center py-3">
                       No files found in "{scanDirectory}" directory
                     </p>
                   ) : (
@@ -236,13 +236,13 @@ export default function RegisterTopicPage() {
                         type="button"
                         onClick={() => addFile(file)}
                         disabled={selectedFiles.some(f => f.path === file.path)}
-                        className="w-full flex items-center gap-3 p-2 rounded-lg bg-surface-2 hover:bg-surface-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-left"
+                        className="w-full flex items-center gap-2 p-1.5 rounded bg-surface-2 hover:bg-surface-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-left"
                       >
                         {getFileIcon(file.type)}
-                        <span className="flex-1 text-sm text-white truncate">{file.name}</span>
-                        <span className="text-xs text-gray-500 capitalize">{file.type}</span>
+                        <span className="flex-1 text-xs text-white truncate">{file.name}</span>
+                        <span className="text-[10px] text-gray-500 capitalize">{file.type}</span>
                         {selectedFiles.some(f => f.path === file.path) && (
-                          <span className="text-xs text-green-400">Added</span>
+                          <span className="text-[10px] text-green-400">Added</span>
                         )}
                       </button>
                     ))
@@ -252,56 +252,56 @@ export default function RegisterTopicPage() {
               
               {/* Selected Files (Ordered) */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-3">
+                <label className="block text-xs font-medium text-gray-300 mb-2">
                   Selected Files - Order ({selectedFiles.length})
                 </label>
                 {selectedFiles.length === 0 ? (
-                  <div className="border border-surface-3 rounded-lg p-8 bg-surface-1 text-center">
-                    <p className="text-gray-500 text-sm">
+                  <div className="border border-surface-3 rounded-lg p-4 bg-surface-1 text-center">
+                    <p className="text-gray-500 text-xs">
                       No files selected. Click files above to add them.
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-2 border border-surface-3 rounded-lg p-3 bg-surface-1">
+                  <div className="space-y-1.5 border border-surface-3 rounded-lg p-2 bg-surface-1">
                     {selectedFiles.map((file, index) => (
                       <div
                         key={`${file.path}-${index}`}
-                        className="flex items-center gap-3 p-3 rounded-lg bg-surface-2"
+                        className="flex items-center gap-2 p-2 rounded bg-surface-2"
                       >
-                        <div className="flex flex-col gap-1">
+                        <div className="flex flex-col gap-0.5">
                           <button
                             type="button"
                             onClick={() => moveFile(index, 'up')}
                             disabled={index === 0}
-                            className="p-1 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                            className="p-0.5 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
                           >
-                            <ChevronUp className="w-4 h-4" />
+                            <ChevronUp className="w-3 h-3" />
                           </button>
                           <button
                             type="button"
                             onClick={() => moveFile(index, 'down')}
                             disabled={index === selectedFiles.length - 1}
-                            className="p-1 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                            className="p-0.5 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
                           >
-                            <ChevronDown className="w-4 h-4" />
+                            <ChevronDown className="w-3 h-3" />
                           </button>
                         </div>
                         
-                        <div className="flex-1 flex items-center gap-3">
-                          <span className="text-sm font-medium text-gray-400 w-6">
+                        <div className="flex-1 flex items-center gap-2">
+                          <span className="text-xs font-medium text-gray-400 w-4">
                             {index + 1}
                           </span>
                           {getFileIcon(file.type)}
-                          <span className="flex-1 text-sm text-white truncate">{file.name}</span>
-                          <span className="text-xs text-gray-500 capitalize">{file.type}</span>
+                          <span className="flex-1 text-xs text-white truncate">{file.name}</span>
+                          <span className="text-[10px] text-gray-500 capitalize">{file.type}</span>
                         </div>
                         
                         <button
                           type="button"
                           onClick={() => removeFile(index)}
-                          className="p-1 text-gray-400 hover:text-red-400 transition-colors"
+                          className="p-0.5 text-gray-400 hover:text-red-400 transition-colors"
                         >
-                          <X className="w-4 h-4" />
+                          <X className="w-3 h-3" />
                         </button>
                       </div>
                     ))}
@@ -311,27 +311,27 @@ export default function RegisterTopicPage() {
             </div>
             
             {/* Submit Button */}
-            <div className="flex gap-4">
+            <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="px-6 py-3 rounded-lg bg-surface-2 border border-surface-3 text-white hover:bg-surface-3 transition-colors"
+                className="px-4 py-1.5 text-sm rounded-lg bg-surface-2 border border-surface-3 text-white hover:bg-surface-3 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading || !title.trim() || selectedFiles.length === 0}
-                className="flex-1 px-6 py-3 rounded-lg bg-gradient-to-r from-primary-600 to-primary-500 text-white font-semibold hover:from-primary-500 hover:to-primary-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-1.5 text-sm rounded-lg bg-gradient-to-r from-primary-600 to-primary-500 text-white font-semibold hover:from-primary-500 hover:to-primary-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
               >
                 {loading ? (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                     Registering...
                   </>
                 ) : (
                   <>
-                    <Plus className="w-5 h-5" />
+                    <Plus className="w-4 h-4" />
                     Register Topic
                   </>
                 )}

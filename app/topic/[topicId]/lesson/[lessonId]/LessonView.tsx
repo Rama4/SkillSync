@@ -87,9 +87,9 @@ export default function LessonView({ topic, lesson }: LessonViewProps) {
       {/* Mobile sidebar toggle */}
       <button
         onClick={() => setShowSidebar(!showSidebar)}
-        className="lg:hidden fixed bottom-6 left-6 z-50 w-12 h-12 rounded-full bg-primary-600 text-white shadow-lg shadow-primary-500/30 flex items-center justify-center"
+        className="lg:hidden fixed bottom-4 left-4 z-50 w-10 h-10 rounded-full bg-primary-600 text-white shadow-lg shadow-primary-500/30 flex items-center justify-center"
       >
-        {showSidebar ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        {showSidebar ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
       </button>
 
       {/* Mobile sidebar overlay */}
@@ -99,23 +99,23 @@ export default function LessonView({ topic, lesson }: LessonViewProps) {
             className="absolute inset-0 bg-black/50"
             onClick={() => setShowSidebar(false)}
           />
-          <aside className="absolute left-0 top-0 bottom-0 w-80 bg-surface-1 border-r border-surface-3 overflow-y-auto pt-20 pb-20">
+          <aside className="absolute left-0 top-0 bottom-0 w-64 bg-surface-1 border-r border-surface-3 overflow-y-auto pt-16 pb-16">
             {/* Mobile sidebar content - same as desktop */}
-            <div className="px-4 mb-6">
+            <div className="px-3 mb-4">
               <Link 
                 href={`/topic/${topic.id}`}
-                className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
+                className="flex items-center gap-1.5 text-gray-400 hover:text-white transition-colors text-xs"
                 onClick={() => setShowSidebar(false)}
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="w-3 h-3" />
                 Back to {topic.title}
               </Link>
             </div>
-            <div className="px-4 mb-8">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+            <div className="px-3 mb-4">
+              <h3 className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">
                 Sections
               </h3>
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 {lesson.sections.map((section, index) => (
                   <button
                     key={section.id}
@@ -123,7 +123,7 @@ export default function LessonView({ topic, lesson }: LessonViewProps) {
                       setCurrentSection(index);
                       setShowSidebar(false);
                     }}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                    className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors ${
                       index === currentSection
                         ? 'bg-primary-500/10 text-primary-400'
                         : 'text-gray-400 hover:bg-surface-2 hover:text-white'
@@ -137,13 +137,13 @@ export default function LessonView({ topic, lesson }: LessonViewProps) {
                     setCurrentSection(lesson.sections.length);
                     setShowSidebar(false);
                   }}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2 ${
+                  className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors flex items-center gap-1.5 ${
                     currentSection === lesson.sections.length
                       ? 'bg-primary-500/10 text-primary-400'
                       : 'text-gray-400 hover:bg-surface-2 hover:text-white'
                   }`}
                 >
-                  <BookOpen className="w-4 h-4" />
+                  <BookOpen className="w-3 h-3" />
                   Quiz
                 </button>
               </div>
@@ -153,10 +153,10 @@ export default function LessonView({ topic, lesson }: LessonViewProps) {
       )}
 
       {/* Main Content */}
-      <main className="lg:ml-80 pt-16">
+      <main className="lg:ml-64 pt-12">
         {/* Progress bar */}
-        <div className="sticky top-16 z-30 bg-surface-0/90 backdrop-blur-lg border-b border-surface-3">
-          <div className="h-1 bg-surface-3">
+        <div className="sticky top-12 z-30 bg-surface-0/90 backdrop-blur-lg border-b border-surface-3">
+          <div className="h-0.5 bg-surface-3">
             <div 
               className="h-full bg-gradient-to-r from-primary-500 to-primary-400 transition-all duration-300"
               style={{ width: `${progress}%` }}
@@ -164,39 +164,39 @@ export default function LessonView({ topic, lesson }: LessonViewProps) {
           </div>
         </div>
 
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           {/* Lesson Header */}
-          <div className="mb-8">
-            <div className="flex items-center gap-3 text-sm text-gray-500 mb-3">
-              <span className={`px-2.5 py-1 rounded-full ${getDifficultyColor(lesson.difficulty)}`}>
+          <div className="mb-4">
+            <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
+              <span className={`px-2 py-0.5 rounded-full ${getDifficultyColor(lesson.difficulty)}`}>
                 {lesson.difficulty}
               </span>
-              <span className="flex items-center gap-1.5">
-                <Clock className="w-4 h-4" />
+              <span className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
                 {lesson.duration}
               </span>
               {isComplete && (
-                <span className="flex items-center gap-1.5 text-green-400">
-                  <CheckCircle className="w-4 h-4" />
+                <span className="flex items-center gap-1 text-green-400">
+                  <CheckCircle className="w-3 h-3" />
                   Completed
                 </span>
               )}
             </div>
-            <h1 className="text-3xl font-bold font-display text-white mb-4">
+            <h1 className="text-xl font-bold font-display text-white mb-2">
               {lesson.title}
             </h1>
 
             {/* Objectives */}
             {!isQuizSection && currentSection === 0 && (
-              <div className="card p-5 bg-primary-500/5 border-primary-500/20 mb-8">
-                <h3 className="flex items-center gap-2 text-primary-400 font-semibold mb-3">
-                  <Target className="w-5 h-5" />
+              <div className="card p-3 bg-primary-500/5 border-primary-500/20 mb-4">
+                <h3 className="flex items-center gap-1.5 text-primary-400 font-semibold text-sm mb-2">
+                  <Target className="w-4 h-4" />
                   Learning Objectives
                 </h3>
-                <ul className="space-y-2">
+                <ul className="space-y-1.5">
                   {lesson.objectives.map((objective, index) => (
-                    <li key={index} className="flex items-start gap-2 text-gray-300">
-                      <CheckCircle className="w-4 h-4 text-primary-400 mt-0.5 flex-shrink-0" />
+                    <li key={index} className="flex items-start gap-1.5 text-gray-300 text-xs">
+                      <CheckCircle className="w-3 h-3 text-primary-400 mt-0.5 flex-shrink-0" />
                       {objective}
                     </li>
                   ))}
@@ -208,8 +208,8 @@ export default function LessonView({ topic, lesson }: LessonViewProps) {
           {/* Content or Quiz */}
           {isQuizSection ? (
             <div>
-              <h2 className="text-2xl font-bold font-display text-white mb-6 flex items-center gap-3">
-                <span className="w-1 h-8 bg-gradient-to-b from-primary-500 to-accent rounded-full" />
+              <h2 className="text-lg font-bold font-display text-white mb-3 flex items-center gap-2">
+                <span className="w-0.5 h-6 bg-gradient-to-b from-primary-500 to-accent rounded-full" />
                 Knowledge Check
               </h2>
               <Quiz
@@ -225,14 +225,14 @@ export default function LessonView({ topic, lesson }: LessonViewProps) {
 
               {/* Key Takeaways - show on last content section */}
               {currentSection === lesson.sections.length - 1 && lesson.keyTakeaways.length > 0 && (
-                <div className="card p-5 bg-accent/5 border-accent/20 mt-8">
-                  <h3 className="flex items-center gap-2 text-accent font-semibold mb-3">
-                    <Lightbulb className="w-5 h-5" />
+                <div className="card p-3 bg-accent/5 border-accent/20 mt-4">
+                  <h3 className="flex items-center gap-1.5 text-accent font-semibold text-sm mb-2">
+                    <Lightbulb className="w-4 h-4" />
                     Key Takeaways
                   </h3>
-                  <ul className="space-y-2">
+                  <ul className="space-y-1.5">
                     {lesson.keyTakeaways.map((takeaway, index) => (
-                      <li key={index} className="flex items-start gap-2 text-gray-300">
+                      <li key={index} className="flex items-start gap-1.5 text-gray-300 text-xs">
                         <span className="text-accent">•</span>
                         {takeaway}
                       </li>
@@ -245,48 +245,48 @@ export default function LessonView({ topic, lesson }: LessonViewProps) {
 
           {/* Navigation */}
           {!isQuizSection && (
-            <div className="flex items-center justify-between mt-12 pt-8 border-t border-surface-3">
+            <div className="flex items-center justify-between mt-6 pt-4 border-t border-surface-3">
               <button
                 onClick={handlePrev}
                 disabled={currentSection === 0}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors ${
                   currentSection === 0
                     ? 'text-gray-600 cursor-not-allowed'
                     : 'text-gray-300 hover:text-white hover:bg-surface-2'
                 }`}
               >
-                <ChevronLeft className="w-5 h-5" />
+                <ChevronLeft className="w-4 h-4" />
                 Previous
               </button>
               
-              <span className="text-sm text-gray-500">
+              <span className="text-xs text-gray-500">
                 {currentSection + 1} / {lesson.sections.length + 1}
               </span>
               
               <button
                 onClick={handleNext}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-500 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-primary-600 text-white hover:bg-primary-500 transition-colors"
               >
                 {currentSection === lesson.sections.length - 1 ? 'Take Quiz' : 'Next'}
-                <ChevronRight className="w-5 h-5" />
+                <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           )}
 
           {/* Resources */}
           {!isQuizSection && lesson.resources && lesson.resources.length > 0 && (
-            <div className="mt-12 pt-8 border-t border-surface-3">
-              <h3 className="text-lg font-semibold text-white mb-4">Additional Resources</h3>
-              <div className="grid gap-3">
+            <div className="mt-6 pt-4 border-t border-surface-3">
+              <h3 className="text-sm font-semibold text-white mb-2">Additional Resources</h3>
+              <div className="grid gap-2">
                 {lesson.resources.map((resource, index) => (
                   <a
                     key={index}
                     href={resource.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="card card-hover p-4 flex items-center gap-3"
+                    className="card card-hover p-2.5 flex items-center gap-2"
                   >
-                    <div className="w-10 h-10 rounded-lg bg-surface-3 flex items-center justify-center text-gray-400">
+                    <div className="w-8 h-8 rounded-lg bg-surface-3 flex items-center justify-center text-gray-400 text-sm">
                       {resource.type === 'video' && '🎬'}
                       {resource.type === 'article' && '📄'}
                       {resource.type === 'book' && '📚'}
@@ -295,10 +295,10 @@ export default function LessonView({ topic, lesson }: LessonViewProps) {
                       {resource.type === 'paper' && '📑'}
                     </div>
                     <div className="flex-grow">
-                      <h4 className="text-white font-medium">{resource.title}</h4>
-                      <span className="text-sm text-gray-500 capitalize">{resource.type}</span>
+                      <h4 className="text-white font-medium text-sm">{resource.title}</h4>
+                      <span className="text-xs text-gray-500 capitalize">{resource.type}</span>
                     </div>
-                    <ExternalLink className="w-4 h-4 text-gray-500" />
+                    <ExternalLink className="w-3 h-3 text-gray-500" />
                   </a>
                 ))}
               </div>
@@ -306,13 +306,13 @@ export default function LessonView({ topic, lesson }: LessonViewProps) {
           )}
 
           {/* Lesson Navigation */}
-          <div className="mt-12 pt-8 border-t border-surface-3 flex items-center justify-between">
+          <div className="mt-6 pt-4 border-t border-surface-3 flex items-center justify-between">
             {lesson.previousLesson ? (
               <Link
                 href={`/topic/${topic.id}/lesson/${lesson.previousLesson}`}
-                className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+                className="flex items-center gap-1.5 text-gray-400 hover:text-white transition-colors text-sm"
               >
-                <ChevronLeft className="w-5 h-5" />
+                <ChevronLeft className="w-4 h-4" />
                 Previous Lesson
               </Link>
             ) : (
@@ -322,10 +322,10 @@ export default function LessonView({ topic, lesson }: LessonViewProps) {
             {lesson.nextLesson && (
               <Link
                 href={`/topic/${topic.id}/lesson/${lesson.nextLesson}`}
-                className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+                className="flex items-center gap-1.5 text-gray-400 hover:text-white transition-colors text-sm"
               >
                 Next Lesson
-                <ChevronRight className="w-5 h-5" />
+                <ChevronRight className="w-4 h-4" />
               </Link>
             )}
           </div>

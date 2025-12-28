@@ -75,17 +75,17 @@ export default function LessonContent({ section }: LessonContentProps) {
   ) {
     return (
       <div className="animate-fade-in">
-        <h2 className="text-2xl font-bold font-display text-white mb-6 flex items-center gap-3">
-          <span className="w-1 h-8 bg-gradient-to-b from-primary-500 to-accent rounded-full" />
+        <h2 className="text-lg font-bold font-display text-white mb-3 flex items-center gap-2">
+          <span className="w-0.5 h-6 bg-gradient-to-b from-primary-500 to-accent rounded-full" />
           {section.title}
         </h2>
 
         {videoUrl && (
-          <div className="my-6">
+          <div className="my-3">
             <video
               controls
-              className="w-full rounded-xl bg-surface-0 border border-surface-3"
-              style={{ maxHeight: "600px" }}
+              className="w-full rounded-lg bg-surface-0 border border-surface-3"
+              style={{ maxHeight: "500px" }}
             >
               <source src={videoUrl} type="video/mp4" />
               Your browser does not support the video tag.
@@ -94,7 +94,7 @@ export default function LessonContent({ section }: LessonContentProps) {
         )}
 
         {section.content && (
-          <div className="prose max-w-none mt-6">
+          <div className="prose max-w-none mt-3">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {section.content}
             </ReactMarkdown>
@@ -108,14 +108,14 @@ export default function LessonContent({ section }: LessonContentProps) {
   if (section.type === "markdown" || section.fileType === "markdown") {
     return (
       <div className="animate-fade-in">
-        <h2 className="text-2xl font-bold font-display text-white mb-6 flex items-center gap-3">
-          <span className="w-1 h-8 bg-gradient-to-b from-primary-500 to-accent rounded-full" />
+        <h2 className="text-lg font-bold font-display text-white mb-3 flex items-center gap-2">
+          <span className="w-0.5 h-6 bg-gradient-to-b from-primary-500 to-accent rounded-full" />
           {section.title}
         </h2>
 
         {loadingMarkdown ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-gray-400">Loading content...</div>
+          <div className="flex items-center justify-center py-8">
+            <div className="text-gray-400 text-sm">Loading content...</div>
           </div>
         ) : (
           <div className="prose max-w-none">
@@ -124,7 +124,7 @@ export default function LessonContent({ section }: LessonContentProps) {
               components={{
                 // Custom code block styling
                 pre: ({ children }) => (
-                  <pre className="bg-surface-0 border border-surface-3 rounded-xl p-4 overflow-x-auto my-4">
+                  <pre className="bg-surface-0 border border-surface-3 rounded-lg p-3 overflow-x-auto my-3 text-sm">
                     {children}
                   </pre>
                 ),
@@ -133,7 +133,7 @@ export default function LessonContent({ section }: LessonContentProps) {
                   if (isInline) {
                     return (
                       <code
-                        className="bg-surface-2 px-1.5 py-0.5 rounded text-primary-400 text-sm"
+                        className="bg-surface-2 px-1 py-0.5 rounded text-primary-400 text-xs"
                         {...props}
                       >
                         {children}
@@ -141,50 +141,54 @@ export default function LessonContent({ section }: LessonContentProps) {
                     );
                   }
                   return (
-                    <code className="text-sm text-gray-300" {...props}>
+                    <code className="text-xs text-gray-300" {...props}>
                       {children}
                     </code>
                   );
                 },
                 // Custom table styling
                 table: ({ children }) => (
-                  <div className="overflow-x-auto my-6">
-                    <table className="w-full border-collapse">{children}</table>
+                  <div className="overflow-x-auto my-3">
+                    <table className="w-full border-collapse text-sm">
+                      {children}
+                    </table>
                   </div>
                 ),
                 th: ({ children }) => (
-                  <th className="bg-surface-2 text-left p-3 font-semibold text-white border-b border-surface-4">
+                  <th className="bg-surface-2 text-left p-2 font-semibold text-white border-b border-surface-4 text-xs">
                     {children}
                   </th>
                 ),
                 td: ({ children }) => (
-                  <td className="p-3 border-b border-surface-3">{children}</td>
+                  <td className="p-2 border-b border-surface-3 text-xs">
+                    {children}
+                  </td>
                 ),
                 // Custom list styling
                 ul: ({ children }) => (
-                  <ul className="my-4 ml-6 space-y-2">{children}</ul>
+                  <ul className="my-2 ml-4 space-y-1">{children}</ul>
                 ),
                 ol: ({ children }) => (
-                  <ol className="my-4 ml-6 space-y-2 list-decimal">
+                  <ol className="my-2 ml-4 space-y-1 list-decimal">
                     {children}
                   </ol>
                 ),
                 li: ({ children }) => (
-                  <li className="text-gray-300">{children}</li>
+                  <li className="text-gray-300 text-sm">{children}</li>
                 ),
                 // Headings
                 h1: ({ children }) => (
-                  <h1 className="text-3xl font-bold font-display text-white mt-8 mb-4">
+                  <h1 className="text-xl font-bold font-display text-white mt-4 mb-2">
                     {children}
                   </h1>
                 ),
                 h2: ({ children }) => (
-                  <h2 className="text-2xl font-bold font-display text-white mt-8 mb-4">
+                  <h2 className="text-lg font-bold font-display text-white mt-4 mb-2">
                     {children}
                   </h2>
                 ),
                 h3: ({ children }) => (
-                  <h3 className="text-xl font-semibold font-display text-white mt-6 mb-3">
+                  <h3 className="text-base font-semibold font-display text-white mt-3 mb-2">
                     {children}
                   </h3>
                 ),
@@ -194,14 +198,14 @@ export default function LessonContent({ section }: LessonContentProps) {
                     href={href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-primary-400 hover:text-primary-300 underline underline-offset-2"
+                    className="text-primary-400 hover:text-primary-300 underline underline-offset-2 text-sm"
                   >
                     {children}
                   </a>
                 ),
                 // Blockquotes
                 blockquote: ({ children }) => (
-                  <blockquote className="border-l-4 border-primary-500 pl-4 italic text-gray-400 my-4">
+                  <blockquote className="border-l-2 border-primary-500 pl-3 italic text-gray-400 my-2 text-sm">
                     {children}
                   </blockquote>
                 ),
@@ -213,7 +217,7 @@ export default function LessonContent({ section }: LessonContentProps) {
                 ),
                 // Paragraphs
                 p: ({ children }) => (
-                  <p className="mb-4 leading-relaxed">{children}</p>
+                  <p className="mb-2 leading-relaxed text-sm">{children}</p>
                 ),
               }}
             >
@@ -228,8 +232,8 @@ export default function LessonContent({ section }: LessonContentProps) {
   // Render regular content section
   return (
     <div className="animate-fade-in">
-      <h2 className="text-2xl font-bold font-display text-white mb-6 flex items-center gap-3">
-        <span className="w-1 h-8 bg-gradient-to-b from-primary-500 to-accent rounded-full" />
+      <h2 className="text-lg font-bold font-display text-white mb-3 flex items-center gap-2">
+        <span className="w-0.5 h-6 bg-gradient-to-b from-primary-500 to-accent rounded-full" />
         {section.title}
       </h2>
 
@@ -239,7 +243,7 @@ export default function LessonContent({ section }: LessonContentProps) {
           components={{
             // Custom code block styling
             pre: ({ children }) => (
-              <pre className="bg-surface-0 border border-surface-3 rounded-xl p-4 overflow-x-auto my-4">
+              <pre className="bg-surface-0 border border-surface-3 rounded-lg p-3 overflow-x-auto my-3 text-sm">
                 {children}
               </pre>
             ),
@@ -248,7 +252,7 @@ export default function LessonContent({ section }: LessonContentProps) {
               if (isInline) {
                 return (
                   <code
-                    className="bg-surface-2 px-1.5 py-0.5 rounded text-primary-400 text-sm"
+                    className="bg-surface-2 px-1 py-0.5 rounded text-primary-400 text-xs"
                     {...props}
                   >
                     {children}
@@ -256,46 +260,52 @@ export default function LessonContent({ section }: LessonContentProps) {
                 );
               }
               return (
-                <code className="text-sm text-gray-300" {...props}>
+                <code className="text-xs text-gray-300" {...props}>
                   {children}
                 </code>
               );
             },
             // Custom table styling
             table: ({ children }) => (
-              <div className="overflow-x-auto my-6">
-                <table className="w-full border-collapse">{children}</table>
+              <div className="overflow-x-auto my-3">
+                <table className="w-full border-collapse text-sm">
+                  {children}
+                </table>
               </div>
             ),
             th: ({ children }) => (
-              <th className="bg-surface-2 text-left p-3 font-semibold text-white border-b border-surface-4">
+              <th className="bg-surface-2 text-left p-2 font-semibold text-white border-b border-surface-4 text-xs">
                 {children}
               </th>
             ),
             td: ({ children }) => (
-              <td className="p-3 border-b border-surface-3">{children}</td>
+              <td className="p-2 border-b border-surface-3 text-xs">
+                {children}
+              </td>
             ),
             // Custom list styling
             ul: ({ children }) => (
-              <ul className="my-4 ml-6 space-y-2">{children}</ul>
+              <ul className="my-2 ml-4 space-y-1">{children}</ul>
             ),
             ol: ({ children }) => (
-              <ol className="my-4 ml-6 space-y-2 list-decimal">{children}</ol>
+              <ol className="my-2 ml-4 space-y-1 list-decimal">{children}</ol>
             ),
-            li: ({ children }) => <li className="text-gray-300">{children}</li>,
+            li: ({ children }) => (
+              <li className="text-gray-300 text-sm">{children}</li>
+            ),
             // Headings
             h1: ({ children }) => (
-              <h1 className="text-3xl font-bold font-display text-white mt-8 mb-4">
+              <h1 className="text-xl font-bold font-display text-white mt-4 mb-2">
                 {children}
               </h1>
             ),
             h2: ({ children }) => (
-              <h2 className="text-2xl font-bold font-display text-white mt-8 mb-4">
+              <h2 className="text-lg font-bold font-display text-white mt-4 mb-2">
                 {children}
               </h2>
             ),
             h3: ({ children }) => (
-              <h3 className="text-xl font-semibold font-display text-white mt-6 mb-3">
+              <h3 className="text-base font-semibold font-display text-white mt-3 mb-2">
                 {children}
               </h3>
             ),
@@ -305,14 +315,14 @@ export default function LessonContent({ section }: LessonContentProps) {
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-primary-400 hover:text-primary-300 underline underline-offset-2"
+                className="text-primary-400 hover:text-primary-300 underline underline-offset-2 text-sm"
               >
                 {children}
               </a>
             ),
             // Blockquotes
             blockquote: ({ children }) => (
-              <blockquote className="border-l-4 border-primary-500 pl-4 italic text-gray-400 my-4">
+              <blockquote className="border-l-2 border-primary-500 pl-3 italic text-gray-400 my-2 text-sm">
                 {children}
               </blockquote>
             ),
@@ -322,7 +332,7 @@ export default function LessonContent({ section }: LessonContentProps) {
             ),
             // Paragraphs
             p: ({ children }) => (
-              <p className="mb-4 leading-relaxed">{children}</p>
+              <p className="mb-2 leading-relaxed text-sm">{children}</p>
             ),
           }}
         >
