@@ -25,6 +25,10 @@ export default function Quiz({questions, topicId, lessonId, onComplete}: QuizPro
   const isCorrect = selectedAnswer === question?.correctAnswer;
   const progress = ((currentQuestion + 1) / questions.length) * 100;
 
+  if (!question) {
+    return null;
+  }
+
   const handleAnswer = (answerIndex: number) => {
     if (showExplanation) return;
 
@@ -118,7 +122,7 @@ export default function Quiz({questions, topicId, lessonId, onComplete}: QuizPro
 
       {/* Question */}
       <div className="card p-4 mb-4">
-        <h3 className="text-base font-semibold text-white mb-4">{question.question}</h3>
+        <h3 className="text-base font-semibold text-white mb-4">{question?.question}</h3>
 
         <div className="space-y-2">
           {question.options?.map((option, index) => {

@@ -1,8 +1,8 @@
 'use client';
 
-import { Note } from '@/lib/types';
-import { useState } from 'react';
-import { Edit2, Trash2, Play, Pause, X } from 'lucide-react';
+import type {Note} from '@/lib/types';
+import {useState} from 'react';
+import {Edit2, Trash2, Play, Pause, X, MicOff} from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -11,11 +11,11 @@ interface NoteItemProps {
   topicId: string;
   lessonId: string;
   onEdit: (note: Note) => void;
-  onDelete: (noteId: string) => void;
+  onDeleteNotePress: (noteId: string) => void;
   onDeleteAudio?: (noteId: string) => void;
 }
 
-export default function NoteItem({ note, topicId, lessonId, onEdit, onDelete, onDeleteAudio }: NoteItemProps) {
+export default function NoteItem({note, topicId, lessonId, onEdit, onDeleteNotePress, onDeleteAudio}: NoteItemProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
   const [showFullContent, setShowFullContent] = useState(false);
@@ -31,23 +31,15 @@ export default function NoteItem({ note, topicId, lessonId, onEdit, onDelete, on
 
     const audioUrl = `/api/topics/${topicId}/lessons/${lessonId}/notes/${note.id}/audio`;
     const newAudio = new Audio(audioUrl);
-    
+
     newAudio.onended = () => {
       setIsPlaying(false);
     };
 
-    newAudio.onerror = (error) => {
+    newAudio.onerror = error => {
       console.error('Audio playback error:', error);
       setIsPlaying(false);
       alert('Failed to play audio. The audio file may be corrupted or in an unsupported format.');
-    };
-
-    newAudio.onloadstart = () => {
-      console.log('Audio loading started');
-    };
-
-    newAudio.oncanplay = () => {
-      console.log('Audio can start playing');
     };
 
     try {
@@ -69,78 +61,68 @@ export default function NoteItem({ note, topicId, lessonId, onEdit, onDelete, on
     }
   };
 
-  const truncatedMarkdown = note.markdown.length > 200 
-    ? note.markdown.substring(0, 200) + '...'
-    : note.markdown;
+  const truncatedMarkdown = note.markdown.length > 200 ? note.markdown.substring(0, 200) + '...' : note.markdown;
 
   return (
-    <div className="card p-4 space-y-3">
-      <div className="flex items-start justify-between">
-        <h4 className="font-semibold text-white text-sm">{note.title}</h4>
-        <div className="flex items-center gap-2">
-          {note.audioFile && (
-            <>
-              <button
-                onClick={isPlaying ? handleStopAudio : handlePlayAudio}
-                className="p-1.5 rounded-lg bg-surface-2 hover:bg-surface-3 text-gray-400 hover:text-white transition-colors"
-                title={isPlaying ? 'Stop audio' : 'Play audio'}
-              >
-                {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-              </button>
-              {onDeleteAudio && (
+    <>
+      <div className="card p-3 space-y-2">
+        <div className="flex items-start justify-between gap-2">
+          <h4 className="font-semibold text-white text-sm flex-1">{note.title}</h4>
+          <div className="flex items-center gap-1">
+            {note.audioFile && (
+              <>
                 <button
-                  onClick={() => onDeleteAudio(note.id)}
-                  className="p-1.5 rounded-lg bg-surface-2 hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-colors"
-                  title="Delete audio only"
-                >
-                  <X className="w-4 h-4" />
+                  onClick={isPlaying ? handleStopAudio : handlePlayAudio}
+                  className="p-1 rounded-lg bg-surface-2 hover:bg-surface-3 text-gray-400 hover:text-white transition-colors"
+                  title={isPlaying ? 'Stop audio' : 'Play audio'}>
+                  {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
                 </button>
-              )}
-            </>
-          )}
-          <button
-            onClick={() => onEdit(note)}
-            className="p-1.5 rounded-lg bg-surface-2 hover:bg-surface-3 text-gray-400 hover:text-white transition-colors"
-            title="Edit note"
-          >
-            <Edit2 className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => onDelete(note.id)}
-            className="p-1.5 rounded-lg bg-surface-2 hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-colors"
-            title="Delete note"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+                {onDeleteAudio && (
+                  <button
+                    onClick={() => onDeleteAudio?.(note.id)}
+                    className="p-1.5 rounded-lg bg-surface-2 hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-colors"
+                    title="Delete audio only">
+                    <MicOff className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </>
+            )}
+            <button
+              onClick={() => onEdit(note)}
+              className="p-1 rounded-lg bg-surface-2 hover:bg-surface-3 text-gray-400 hover:text-white transition-colors"
+              title="Edit note">
+              <Edit2 className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => onDeleteNotePress(note.id)}
+              className="p-1 rounded-lg bg-surface-2 hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-colors"
+              title="Delete note">
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {note.markdown && (
+          <div className="prose prose-sm max-w-none text-xs">
+            {showFullContent || note.markdown.length <= 200 ? (
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{note.markdown}</ReactMarkdown>
+            ) : (
+              <>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{truncatedMarkdown}</ReactMarkdown>
+                <button
+                  onClick={() => setShowFullContent(true)}
+                  className="text-primary-400 hover:text-primary-300 text-xs mt-1">
+                  Show more...
+                </button>
+              </>
+            )}
+          </div>
+        )}
+
+        <div className="text-[10px] text-gray-500">
+          {new Date(note.createdAt).toLocaleDateString()} {new Date(note.createdAt).toLocaleTimeString()}
         </div>
       </div>
-
-      {note.markdown && (
-        <div className="prose prose-sm max-w-none">
-          {showFullContent || note.markdown.length <= 200 ? (
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {note.markdown}
-            </ReactMarkdown>
-          ) : (
-            <>
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {truncatedMarkdown}
-              </ReactMarkdown>
-              <button
-                onClick={() => setShowFullContent(true)}
-                className="text-primary-400 hover:text-primary-300 text-sm mt-2"
-              >
-                Show more...
-              </button>
-            </>
-          )}
-        </div>
-      )}
-
-      <div className="text-xs text-gray-500">
-        {new Date(note.createdAt).toLocaleDateString()} {new Date(note.createdAt).toLocaleTimeString()}
-      </div>
-    </div>
+    </>
   );
 }
-

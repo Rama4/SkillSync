@@ -10,7 +10,8 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
-    "nativewind-env.d.ts"
+    "nativewind-env.d.ts",
+    "../lib/noteUtils.ts"
   ],
   "exclude": [
     "node_modules",

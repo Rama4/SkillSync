@@ -1,8 +1,10 @@
-"use client";
+'use client';
 
-import { Note } from "@/lib/types";
-import { useState, useRef, useEffect } from "react";
-import { Save, X, Mic, Square, Loader2 } from "lucide-react";
+import type {Note} from '@/lib/types';
+import {useState, useEffect} from 'react';
+import {X, Loader2, Check} from 'lucide-react';
+import AudioRecorder from './AudioRecorder';
+import DeleteDialog from './DeleteDialog';
 
 interface NoteEditorProps {
   note?: Note | null;
@@ -12,70 +14,55 @@ interface NoteEditorProps {
   onCancel: () => void;
 }
 
-export default function NoteEditor({
-  note,
-  topicId,
-  lessonId,
-  onSave,
-  onCancel,
-}: NoteEditorProps) {
-  const [title, setTitle] = useState(note?.title || "");
-  const [markdown, setMarkdown] = useState(note?.markdown || "");
-  const [isRecording, setIsRecording] = useState(false);
+export default function NoteEditor({note, topicId, lessonId, onSave, onCancel}: NoteEditorProps) {
+  const {id: noteId, title: noteTitle, markdown: noteMarkdown, audioFile: noteAudioFile} = note || {};
+  const [title, setTitle] = useState(noteTitle || '');
+  const [markdown, setMarkdown] = useState(noteMarkdown || '');
   const [isSaving, setIsSaving] = useState(false);
+  const [audioUrl, setAudioUrl] = useState<string>('');
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
+  const [showDeleteAudioDialog, setShowDeleteAudioDialog] = useState(false);
+  const [pendingAudioDelete, setPendingAudioDelete] = useState(false);
 
   useEffect(() => {
-    // Set initial audio URL if editing existing note with audio
-    if (note?.audioFile) {
-      setAudioUrl(
-        `/api/topics/${topicId}/lessons/${lessonId}/notes/${note.id}/audio`
-      );
+    if (noteAudioFile) {
+      setAudioUrl(`/api/topics/${topicId}/lessons/${lessonId}/notes/${noteId}/audio`);
     }
-  }, [note, topicId, lessonId]);
+  }, [noteAudioFile, noteId, topicId, lessonId, setAudioUrl]);
 
-  const startRecording = async () => {
+  const handleDeleteAudio = async () => {
+    if (!noteId) {
+      // If note hasn't been saved yet, just clear the audio blob
+      setAudioBlob(null);
+      setAudioUrl('');
+      setShowDeleteAudioDialog(false);
+      return;
+    }
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      chunksRef.current = [];
+      const response = await fetch(`/api/topics/${topicId}/lessons/${lessonId}/notes/${noteId}/audio`, {
+        method: 'DELETE',
+      });
 
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          chunksRef.current.push(event.data);
-        }
-      };
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete audio');
+      }
 
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-        console.log("Audio recording stopped, blob size:", blob.size);
-        setAudioBlob(blob);
-        setAudioUrl(URL.createObjectURL(blob));
-        stream.getTracks().forEach((track) => track.stop());
-      };
-
-      mediaRecorder.start();
-      setIsRecording(true);
+      setAudioUrl('');
+      setAudioBlob(null);
+      setPendingAudioDelete(true);
     } catch (error) {
-      console.error("Error starting recording:", error);
-      alert("Failed to start recording. Please check microphone permissions.");
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
+      console.error('Error deleting audio:', error);
+      alert((error as Error).message);
+    } finally {
+      setShowDeleteAudioDialog(false);
     }
   };
 
   const handleSave = async () => {
     if (!title.trim()) {
-      alert("Please enter a title");
+      alert('Please enter a title');
       return;
     }
 
@@ -83,152 +70,120 @@ export default function NoteEditor({
 
     try {
       const formData = new FormData();
-      formData.append("title", title);
-      formData.append("markdown", markdown);
+      formData.append('title', title);
+      formData.append('markdown', markdown);
 
-      // If new audio recorded, add it
-      if (audioBlob && !note?.audioFile) {
-        console.log("Adding audio to form data, blob size:", audioBlob.size);
-        formData.append("audio", audioBlob, "recording.webm");
-      }
+      let workingNote: Note = note as Note;
 
-      let savedNote: Note;
-
-      if (note) {
-        // Update existing note
-        const response = await fetch(
-          `/api/topics/${topicId}/lessons/${lessonId}/notes/${note.id}`,
-          {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ title, markdown }),
-          }
-        );
-
-        if (!response.ok) throw new Error("Failed to update note");
-
-        const data = await response.json();
-        savedNote = data.note;
-
-        // If new audio recorded, upload it
-        if (audioBlob) {
-          const audioFormData = new FormData();
-          audioFormData.append("audio", audioBlob, "recording.webm");
-          await fetch(
-            `/api/topics/${topicId}/lessons/${lessonId}/notes/${note.id}/audio`,
-            {
-              method: "POST",
-              body: audioFormData,
-            }
-          );
-        }
-      } else {
+      if (!workingNote) {
         // Create new note
-        const response = await fetch(
-          `/api/topics/${topicId}/lessons/${lessonId}/notes`,
-          {
-            method: "POST",
-            body: formData,
-          }
-        );
+        const createNoteResponse = await fetch(`/api/topics/${topicId}/lessons/${lessonId}/notes`, {
+          method: 'POST',
+          body: formData,
+        });
 
-        if (!response.ok) throw new Error("Failed to create note");
-
-        const data = await response.json();
-        savedNote = data.note;
+        if (!createNoteResponse.ok) throw new Error('Failed to create note');
+        const newNoteData = await createNoteResponse.json();
+        workingNote = newNoteData.note as Note;
       }
 
-      onSave(savedNote);
+      let savedAudioFile: string | undefined;
+      if (audioBlob) {
+        const audioFormData = new FormData();
+        const mimeType = audioBlob.type;
+        const extension = mimeType.split('/')[1]?.split(';')[0] || 'webm';
+        const fileName = `${workingNote.id}.${extension}`;
+        audioFormData.append('audio', audioBlob, fileName);
+        const audioUploadResponse = await fetch(
+          `/api/topics/${topicId}/lessons/${lessonId}/notes/${workingNote.id}/audio`,
+          {
+            method: 'POST',
+            body: audioFormData,
+          },
+        );
+        const audioUploadData = await audioUploadResponse.json();
+        if (audioUploadData?.success) {
+          savedAudioFile = audioUploadData.audioFile;
+        }
+      }
+
+      // Update existing note
+      const response = await fetch(`/api/topics/${topicId}/lessons/${lessonId}/notes/${workingNote.id}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          title: title,
+          markdown: markdown,
+          ...(savedAudioFile ? {audioFile: savedAudioFile} : {}),
+          ...(pendingAudioDelete && !audioBlob ? {audioFile: null} : {}),
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to update note');
+      const data = await response.json();
+      workingNote = data.note;
+
+      onSave(workingNote);
     } catch (error) {
-      console.error("Error saving note:", error);
-      alert("Failed to save note");
+      console.error('Error saving note:', error);
+      alert('Failed to save note');
     } finally {
       setIsSaving(false);
     }
   };
 
   return (
-    <div className="card p-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-white">
-          {note ? "Edit Note" : "New Note"}
-        </h3>
-        <button
-          onClick={onCancel}
-          className="p-1 rounded-lg hover:bg-surface-2 text-gray-400 hover:text-white transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
+    <>
+      <div className="card p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-white text-sm">{note ? 'Edit Note' : 'New Note'}</h3>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="p-1.5 rounded-lg hover:bg-surface-2 text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+              title="Save note">
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={onCancel}
+              className="p-1.5 rounded-lg hover:bg-surface-2 text-gray-400 hover:text-white transition-colors"
+              title="Cancel">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <input
+            type="text"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            placeholder="Note title"
+            className="w-full px-3 py-2 bg-surface-2 border border-surface-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+          />
+        </div>
+
+        <div>
+          <textarea
+            value={markdown}
+            onChange={e => setMarkdown(e.target.value)}
+            placeholder="Write your notes in markdown format..."
+            rows={6}
+            className="w-full px-3 py-2 bg-surface-2 border border-surface-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono text-xs"
+          />
+        </div>
+
+        <AudioRecorder mediaUrl={audioUrl} setMedia={setAudioBlob} />
       </div>
 
-      <div>
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Note title"
-          className="w-full px-3 py-2 bg-surface-2 border border-surface-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
-        />
-      </div>
-
-      <div>
-        <textarea
-          value={markdown}
-          onChange={(e) => setMarkdown(e.target.value)}
-          placeholder="Write your notes in markdown format..."
-          rows={8}
-          className="w-full px-3 py-2 bg-surface-2 border border-surface-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono text-sm"
-        />
-      </div>
-
-      <div className="flex items-center justify-center">
-        {audioUrl && <audio src={audioUrl} controls className="w-full h-8" />}
-      </div>
-      <div className="flex items-center gap-3">
-        {!isRecording ? (
-          <button
-            onClick={startRecording}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-2 hover:bg-surface-3 text-white transition-colors"
-          >
-            <Mic className="w-4 h-4" />
-            Record Audio
-          </button>
-        ) : (
-          <button
-            onClick={stopRecording}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-colors"
-          >
-            <Square className="w-4 h-4" />
-            Stop Recording
-          </button>
-        )}
-      </div>
-
-      <div className="flex gap-2">
-        <button
-          onClick={handleSave}
-          disabled={isSaving}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-500 text-white transition-colors disabled:opacity-50"
-        >
-          {isSaving ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            <>
-              <Save className="w-4 h-4" />
-              Save Note
-            </>
-          )}
-        </button>
-        <button
-          onClick={onCancel}
-          className="px-4 py-2 rounded-lg bg-surface-2 hover:bg-surface-3 text-white transition-colors"
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
+      <DeleteDialog
+        open={showDeleteAudioDialog}
+        onOpenChange={setShowDeleteAudioDialog}
+        onDelete={handleDeleteAudio}
+        description="Are you sure you want to delete this audio recording? This action cannot be undone. Your text notes will be kept."
+        title="Delete Audio Recording?"
+      />
+    </>
   );
 }

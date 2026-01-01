@@ -1,10 +1,10 @@
 import React, {useState, useEffect, useCallback, useImperativeHandle, forwardRef} from 'react';
 import {View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView} from 'react-native';
 import {Note} from '../../../lib/types';
-import {notesService} from '../services/notesService';
-import {audioRecorder} from '../native/AudioRecorder';
+import {notesService} from '@/services/notesService';
+import {audioRecorder} from '@/native/AudioRecorder';
 import AudioPlayer from './AudioPlayer';
-import {formatDuration, getTempAudioFileName} from '../utils/noteUtils';
+import {formatDuration, getTempAudioFileName} from '../../../lib/noteUtils';
 import CheckIcon from '@/assets/icons/circle-check.svg';
 import CloseIcon from '@/assets/icons/circle-x.svg';
 

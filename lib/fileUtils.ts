@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { MediaFile, TopicMeta, LessonMeta, Lesson, Note, NotesIndex } from './types';
+import {MediaFile, TopicMeta, LessonMeta, Lesson, Note, NotesIndex} from './types';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 
@@ -23,7 +23,7 @@ export function getFileType(filename: string): 'video' | 'markdown' | 'other' {
   const ext = path.extname(filename).toLowerCase();
   const videoExts = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.mkv'];
   const markdownExts = ['.md', '.markdown'];
-  
+
   if (videoExts.includes(ext)) return 'video';
   if (markdownExts.includes(ext)) return 'markdown';
   return 'other';
@@ -35,19 +35,19 @@ export function getFileType(filename: string): 'video' | 'markdown' | 'other' {
 export function scanMediaFiles(directory: string): MediaFile[] {
   const files: MediaFile[] = [];
   const fullPath = path.join(DATA_DIR, directory);
-  
+
   if (!fs.existsSync(fullPath) || !fs.statSync(fullPath).isDirectory()) {
     return files;
   }
-  
+
   try {
-    const entries = fs.readdirSync(fullPath, { withFileTypes: true });
-    
+    const entries = fs.readdirSync(fullPath, {withFileTypes: true});
+
     for (const entry of entries) {
       if (entry.isFile()) {
         const filePath = path.join(directory, entry.name);
         const stats = fs.statSync(path.join(fullPath, entry.name));
-        
+
         files.push({
           path: filePath,
           name: entry.name,
@@ -59,7 +59,7 @@ export function scanMediaFiles(directory: string): MediaFile[] {
   } catch (error) {
     console.error(`Error scanning directory ${directory}:`, error);
   }
-  
+
   return files;
 }
 
@@ -69,13 +69,13 @@ export function scanMediaFiles(directory: string): MediaFile[] {
 export function copyFile(sourcePath: string, destPath: string): void {
   const fullSourcePath = path.join(DATA_DIR, sourcePath);
   const fullDestPath = path.join(DATA_DIR, destPath);
-  
+
   // Ensure destination directory exists
   const destDir = path.dirname(fullDestPath);
   if (!fs.existsSync(destDir)) {
-    fs.mkdirSync(destDir, { recursive: true });
+    fs.mkdirSync(destDir, {recursive: true});
   }
-  
+
   fs.copyFileSync(fullSourcePath, fullDestPath);
 }
 
@@ -93,11 +93,13 @@ export function generateLessonId(filename: string, index: number): string {
 export function generateLessonTitle(filename: string): string {
   const nameWithoutExt = path.parse(filename).name;
   // Clean up common patterns like [VIDEO_ID] or (video_id)
-  return nameWithoutExt
-    .replace(/\[.*?\]/g, '')
-    .replace(/\(.*?\)/g, '')
-    .trim()
-    .replace(/\s+/g, ' ') || path.parse(filename).name;
+  return (
+    nameWithoutExt
+      .replace(/\[.*?\]/g, '')
+      .replace(/\(.*?\)/g, '')
+      .trim()
+      .replace(/\s+/g, ' ') || path.parse(filename).name
+  );
 }
 
 /**
@@ -123,12 +125,12 @@ export function generateLessonFromMedia(
   topicId: string,
   order: number,
   previousLessonId: string | null,
-  nextLessonId: string | null
+  nextLessonId: string | null,
 ): Lesson {
   const lessonId = generateLessonId(mediaFile.name, order - 1);
   const title = generateLessonTitle(mediaFile.name);
   const mediaPath = `media/${mediaFile.name}`;
-  
+
   // Create appropriate section based on file type
   let section;
   if (mediaFile.type === 'video') {
@@ -148,7 +150,7 @@ export function generateLessonFromMedia(
     if (fs.existsSync(markdownPath)) {
       content = fs.readFileSync(markdownPath, 'utf-8');
     }
-    
+
     section = {
       id: `${lessonId}-content`,
       type: 'markdown' as const,
@@ -167,7 +169,7 @@ export function generateLessonFromMedia(
       fileType: 'other' as const,
     };
   }
-  
+
   return {
     id: lessonId,
     title: title,
@@ -194,7 +196,7 @@ export function generateTopicJson(
   title: string,
   description: string,
   tags: string[],
-  lessons: Lesson[]
+  lessons: Lesson[],
 ): TopicMeta {
   const lessonMetas: LessonMeta[] = lessons.map(lesson => ({
     id: lesson.id,
@@ -203,7 +205,7 @@ export function generateTopicJson(
     duration: lesson.duration,
     difficulty: lesson.difficulty,
   }));
-  
+
   return {
     id: topicId,
     title,
@@ -228,19 +230,19 @@ export function createTopicDirectory(topicId: string): {
   const topicDir = path.join(DATA_DIR, topicId);
   const lessonsDir = path.join(topicDir, 'lessons');
   const mediaDir = path.join(topicDir, 'media');
-  
+
   // Create directories
   if (!fs.existsSync(topicDir)) {
-    fs.mkdirSync(topicDir, { recursive: true });
+    fs.mkdirSync(topicDir, {recursive: true});
   }
   if (!fs.existsSync(lessonsDir)) {
-    fs.mkdirSync(lessonsDir, { recursive: true });
+    fs.mkdirSync(lessonsDir, {recursive: true});
   }
   if (!fs.existsSync(mediaDir)) {
-    fs.mkdirSync(mediaDir, { recursive: true });
+    fs.mkdirSync(mediaDir, {recursive: true});
   }
-  
-  return { topicDir, lessonsDir, mediaDir };
+
+  return {topicDir, lessonsDir, mediaDir};
 }
 
 /**
@@ -248,7 +250,7 @@ export function createTopicDirectory(topicId: string): {
  */
 export function updateTopicsIndex(topicMeta: TopicMeta): void {
   const topicsIndexPath = path.join(DATA_DIR, 'topics.json');
-  
+
   // Read existing topics index or create new one
   let topicsIndex: {
     version: string;
@@ -267,7 +269,7 @@ export function updateTopicsIndex(topicMeta: TopicMeta): void {
       tags: string[];
     }>;
   };
-  
+
   if (fs.existsSync(topicsIndexPath)) {
     try {
       topicsIndex = JSON.parse(fs.readFileSync(topicsIndexPath, 'utf-8'));
@@ -277,7 +279,7 @@ export function updateTopicsIndex(topicMeta: TopicMeta): void {
       topicsIndex = {
         version: '1.0.0',
         lastUpdated: new Date().toISOString().split('T')[0],
-        topics: []
+        topics: [],
       };
     }
   } else {
@@ -285,25 +287,24 @@ export function updateTopicsIndex(topicMeta: TopicMeta): void {
     topicsIndex = {
       version: '1.0.0',
       lastUpdated: new Date().toISOString().split('T')[0],
-      topics: []
+      topics: [],
     };
   }
-  
+
   // Calculate total duration from lessons
   const totalMinutes = topicMeta.lessons.reduce((acc, lesson) => {
     const mins = parseInt(lesson.duration) || 0;
     return acc + mins;
   }, 0);
-  
+
   // Determine predominant difficulty
   const difficulties = topicMeta.lessons.map(l => l.difficulty);
   const difficultyCount = difficulties.reduce((acc, diff) => {
     acc[diff] = (acc[diff] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
-  const predominantDifficulty = Object.entries(difficultyCount)
-    .sort(([,a], [,b]) => b - a)[0]?.[0] || 'beginner';
-  
+  const predominantDifficulty = Object.entries(difficultyCount).sort(([, a], [, b]) => b - a)[0]?.[0] || 'beginner';
+
   // Create topic summary for index
   const topicSummary = {
     id: topicMeta.id,
@@ -316,18 +317,18 @@ export function updateTopicsIndex(topicMeta: TopicMeta): void {
     lessonCount: topicMeta.lessons.length,
     totalDuration: `${totalMinutes} min`,
     difficulty: predominantDifficulty,
-    tags: topicMeta.tags
+    tags: topicMeta.tags,
   };
-  
+
   // Remove existing entry if it exists (update case)
   topicsIndex.topics = topicsIndex.topics.filter(t => t.id !== topicMeta.id);
-  
+
   // Add new/updated topic
   topicsIndex.topics.push(topicSummary);
-  
+
   // Update lastUpdated
   topicsIndex.lastUpdated = new Date().toISOString().split('T')[0];
-  
+
   // Write back to file
   fs.writeFileSync(topicsIndexPath, JSON.stringify(topicsIndex, null, 2), 'utf-8');
 }
@@ -366,15 +367,15 @@ export function getAudioPath(topicId: string, lessonId: string, noteId: string):
 export function getNotes(topicId: string, lessonId: string): Note[] {
   const notesDir = getNotesDir(topicId, lessonId);
   const indexPath = getNotesIndexPath(topicId, lessonId);
-  
+
   if (!fs.existsSync(notesDir) || !fs.existsSync(indexPath)) {
     return [];
   }
-  
+
   try {
     const index: NotesIndex = JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
     const notes: Note[] = [];
-    
+
     for (const noteId of index.notes) {
       const notePath = getNotePath(topicId, lessonId, noteId);
       if (fs.existsSync(notePath)) {
@@ -382,10 +383,10 @@ export function getNotes(topicId: string, lessonId: string): Note[] {
         notes.push(note);
       }
     }
-    
+
     // Sort by createdAt (newest first)
     notes.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    
+
     return notes;
   } catch (error) {
     console.error(`Error reading notes for lesson ${lessonId}:`, error);
@@ -400,39 +401,39 @@ export function saveNote(note: Note, topicId: string): void {
   const notesDir = getNotesDir(topicId, note.lessonId);
   const audioDir = path.join(notesDir, 'audio');
   const indexPath = getNotesIndexPath(topicId, note.lessonId);
-  
+
   // Create directories if they don't exist
   if (!fs.existsSync(notesDir)) {
-    fs.mkdirSync(notesDir, { recursive: true });
+    fs.mkdirSync(notesDir, {recursive: true});
   }
   if (!fs.existsSync(audioDir)) {
-    fs.mkdirSync(audioDir, { recursive: true });
+    fs.mkdirSync(audioDir, {recursive: true});
   }
-  
+
   // Read or create index
   let index: NotesIndex;
   if (fs.existsSync(indexPath)) {
     index = JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
   } else {
-    index = { notes: [], lastUpdated: new Date().toISOString() };
+    index = {notes: [], lastUpdated: new Date().toISOString()};
   }
-  
+
   // Add note ID to index if not present
   if (!index.notes.includes(note.id)) {
     index.notes.push(note.id);
   }
-  
+
   // Update timestamps
   index.lastUpdated = new Date().toISOString();
   note.updatedAt = new Date().toISOString();
   if (!note.createdAt) {
     note.createdAt = note.updatedAt;
   }
-  
+
   // Save note file
   const notePath = getNotePath(topicId, note.lessonId, note.id);
   fs.writeFileSync(notePath, JSON.stringify(note, null, 2), 'utf-8');
-  
+
   // Save index
   fs.writeFileSync(indexPath, JSON.stringify(index, null, 2), 'utf-8');
 }
@@ -444,24 +445,28 @@ export function deleteNote(noteId: string, lessonId: string, topicId: string): v
   const notesDir = getNotesDir(topicId, lessonId);
   const indexPath = getNotesIndexPath(topicId, lessonId);
   const notePath = getNotePath(topicId, lessonId, noteId);
-  
+
   // Delete note file
   if (fs.existsSync(notePath)) {
     fs.unlinkSync(notePath);
   }
-  
+
   // Delete audio files if they exist (try different extensions)
   const audioDir = path.join(notesDir, 'audio');
-  const possibleExtensions = ['webm', 'mp3', 'm4a', 'wav'];
-  
+  const possibleExtensions = ['webm', 'mp3', 'm4a', 'wav', 'mp4'];
+
   for (const ext of possibleExtensions) {
     const audioPath = path.join(audioDir, `${noteId}.${ext}`);
     if (fs.existsSync(audioPath)) {
-      fs.unlinkSync(audioPath);
-      break; // Only delete the first match
+      try {
+        fs.unlinkSync(audioPath);
+        break; // Only delete the first match
+      } catch (error) {
+        console.error(`Error deleting audio file ${audioPath}:`, error);
+      }
     }
   }
-  
+
   // Update index
   if (fs.existsSync(indexPath)) {
     const index: NotesIndex = JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
@@ -474,17 +479,22 @@ export function deleteNote(noteId: string, lessonId: string, topicId: string): v
 /**
  * Save audio file for a note
  */
-export function saveAudioFile(audioBuffer: Buffer, noteId: string, lessonId: string, topicId: string, extension: string = 'webm'): string {
+export function saveAudioFile(
+  audioBuffer: Buffer,
+  noteId: string,
+  lessonId: string,
+  topicId: string,
+  extension: string = 'webm',
+): string {
   const audioDir = path.join(getNotesDir(topicId, lessonId), 'audio');
-  
+
   // Create audio directory if it doesn't exist
   if (!fs.existsSync(audioDir)) {
-    fs.mkdirSync(audioDir, { recursive: true });
+    fs.mkdirSync(audioDir, {recursive: true});
   }
-  
+
   const audioPath = path.join(audioDir, `${noteId}.${extension}`);
   fs.writeFileSync(audioPath, audioBuffer);
 
   return `audio/${noteId}.${extension}`;
 }
-
