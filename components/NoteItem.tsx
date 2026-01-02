@@ -5,6 +5,7 @@ import {useState} from 'react';
 import {Edit2, Trash2, Play, Pause, X, MicOff} from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import {getAudioPlayerUrl} from '@/lib/noteUtils';
 
 interface NoteItemProps {
   note: Note;
@@ -29,7 +30,7 @@ export default function NoteItem({note, topicId, lessonId, onEdit, onDeleteNoteP
       return;
     }
 
-    const audioUrl = `/api/topics/${topicId}/lessons/${lessonId}/notes/${note.id}/audio`;
+    const audioUrl = getAudioPlayerUrl(topicId, lessonId, note.id);
     const newAudio = new Audio(audioUrl);
 
     newAudio.onended = () => {

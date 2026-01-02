@@ -1,5 +1,23 @@
 # Dev History of SkillSync
 
+## Web App
+
+### Theme System Refactor
+
+Refactored color system to use CSS variables with RGB channels and Tailwind's `<alpha-value>` syntax, enabling opacity modifiers (e.g., `bg-primary-500/20`) throughout the app. All colors now derive from `app/globals.css` variables mapped in `tailwind.config.ts`, providing a consistent theme globally.
+
+### Audio recording UX refactor
+
+### data organization change
+
+    folder structure
+
+### lesson notes drag and drop UI
+
+Note: populating the audio playback url : resetting the audioFile field of note with the audio file's GET url (topic/<topicid>/lesson/<lessonid>/notes/<noteid>/audio)
+
+    done in DraggableNotesManager
+
 ## Mobile App
 
 ### Dropping and re-initializing the local DB upon every app start

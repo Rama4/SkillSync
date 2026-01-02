@@ -1,18 +1,20 @@
-import { TopicMeta, Lesson } from './types';
+import {TopicMeta, Lesson, Note} from './types';
 import fs from 'fs';
 import path from 'path';
+import {getNotes} from './fileUtils';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 
 // Get all available topics
 export async function getTopics(): Promise<TopicMeta[]> {
   const topics: TopicMeta[] = [];
-  
+
   try {
-    const topicDirs = fs.readdirSync(DATA_DIR, { withFileTypes: true })
+    const topicDirs = fs
+      .readdirSync(DATA_DIR, {withFileTypes: true})
       .filter(dirent => dirent.isDirectory())
       .map(dirent => dirent.name);
-    
+
     for (const dir of topicDirs) {
       const topicPath = path.join(DATA_DIR, dir, 'topic.json');
       if (fs.existsSync(topicPath)) {
@@ -23,7 +25,7 @@ export async function getTopics(): Promise<TopicMeta[]> {
   } catch (error) {
     console.error('Error reading topics:', error);
   }
-  
+
   return topics;
 }
 
@@ -56,26 +58,40 @@ export async function getLesson(topicId: string, lessonId: string): Promise<Less
 // Get all lessons for a topic
 export async function getLessons(topicId: string): Promise<Lesson[]> {
   const lessons: Lesson[] = [];
-  
+
   try {
     const lessonsDir = path.join(DATA_DIR, topicId, 'lessons');
     if (fs.existsSync(lessonsDir)) {
-      const lessonFiles = fs.readdirSync(lessonsDir)
-        .filter(file => file.endsWith('.json'));
-      
+      const lessonFiles = fs.readdirSync(lessonsDir).filter(file => file.endsWith('.json'));
+
       for (const file of lessonFiles) {
         const lessonPath = path.join(lessonsDir, file);
         const lessonData = JSON.parse(fs.readFileSync(lessonPath, 'utf-8'));
         lessons.push(lessonData);
       }
-      
+
       // Sort by order
       lessons.sort((a, b) => a.order - b.order);
     }
   } catch (error) {
     console.error(`Error reading lessons for ${topicId}:`, error);
   }
-  
+
   return lessons;
 }
 
+// Get all notes for a topic
+export async function getNotesByTopic(topicId: string): Promise<Note[]> {
+  const notes: Note[] = [];
+  try {
+    const lessons = await getLessons(topicId);
+    for (const lesson of lessons) {
+      const lessonNotes = getNotes(topicId, lesson.id);
+      notes.push(...lessonNotes);
+    }
+    return notes;
+  } catch (error) {
+    console.error(`Error reading notes for ${topicId}:`, error);
+  }
+  return [];
+}

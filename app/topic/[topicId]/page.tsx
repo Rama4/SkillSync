@@ -1,28 +1,28 @@
-import {notFound} from 'next/navigation';
-import Link from 'next/link';
-import Header from '@/components/Header';
-import {getTopic, getLessons} from '@/lib/data';
-import {Clock, BookOpen, ChevronRight, ChevronLeft, Target, CheckCircle} from 'lucide-react';
+import { notFound } from "next/navigation"
+import Link from "next/link"
+import Header from "@/components/Header"
+import { getTopic, getLessons } from "@/lib/data"
+import { Clock, BookOpen, ChevronRight, ChevronLeft, Target, FileEdit } from "lucide-react"
 
 interface TopicPageProps {
   params: Promise<{
-    topicId: string;
-  }>;
+    topicId: string
+  }>
 }
 
-export default async function TopicPage({params}: TopicPageProps) {
-  const {topicId} = await params;
-  const topic = await getTopic(topicId);
-  const lessons = await getLessons(topicId);
+export default async function TopicPage({ params }: TopicPageProps) {
+  const { topicId } = await params
+  const topic = await getTopic(topicId)
+  const lessons = await getLessons(topicId)
 
   if (!topic) {
-    notFound();
+    notFound()
   }
 
   const totalDuration = lessons.reduce((acc, lesson) => {
-    const mins = parseInt(lesson.duration) || 0;
-    return acc + mins;
-  }, 0);
+    const mins = Number.parseInt(lesson.duration) || 0
+    return acc + mins
+  }, 0)
 
   return (
     <main className="min-h-screen">
@@ -34,14 +34,15 @@ export default async function TopicPage({params}: TopicPageProps) {
           {/* Breadcrumb */}
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 text-gray-400 hover:text-white transition-colors text-xs mb-3">
+            className="inline-flex items-center gap-1.5 text-gray-400 hover:text-white transition-colors text-xs mb-3"
+          >
             <ChevronLeft className="w-3 h-3" />
             All Topics
           </Link>
 
           {/* Topic Header */}
           <div className="flex items-start gap-4 mb-4">
-            <div className="text-3xl p-2.5 rounded-xl" style={{backgroundColor: `${topic.color}15`}}>
+            <div className="text-3xl p-2.5 rounded-xl" style={{ backgroundColor: `${topic.color}15` }}>
               {topic.icon}
             </div>
             <div className="flex-grow">
@@ -71,14 +72,24 @@ export default async function TopicPage({params}: TopicPageProps) {
       {/* Lessons List */}
       <section className="pb-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-base font-bold font-display text-white mb-3">Course Content</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-bold font-display text-white">Course Content</h2>
+            <Link
+              href={`/topic/${topicId}/notes`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary/10 hover:bg-primary/20 text-primary text-sm font-medium transition-colors"
+            >
+              <FileEdit className="w-4 h-4" />
+              Manage Notes
+            </Link>
+          </div>
 
           <div className="space-y-2">
             {lessons.map((lesson, index) => (
               <Link
                 key={lesson.id}
                 href={`/topic/${topicId}/lesson/${lesson.id}`}
-                className="card card-hover p-3 flex items-center gap-3 group">
+                className="card card-hover p-3 flex items-center gap-3 group"
+              >
                 {/* Lesson number */}
                 <div className="w-7 h-7 rounded-lg bg-surface-3 flex items-center justify-center text-gray-400 text-sm font-semibold group-hover:bg-primary-500/20 group-hover:text-primary-400 transition-colors">
                   {index + 1}
@@ -114,7 +125,8 @@ export default async function TopicPage({params}: TopicPageProps) {
             <div className="mt-4 text-center">
               <Link
                 href={`/topic/${topicId}/lesson/${lessons[0].id}`}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r from-primary-600 to-primary-500 text-white text-sm font-semibold hover:from-primary-500 hover:to-primary-400 transition-all shadow-lg shadow-primary-500/25">
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r from-primary-600 to-primary-500 text-white text-sm font-semibold hover:from-primary-500 hover:to-primary-400 transition-all shadow-lg shadow-primary-500/25"
+              >
                 Start Learning
                 <ChevronRight className="w-4 h-4" />
               </Link>
@@ -123,5 +135,5 @@ export default async function TopicPage({params}: TopicPageProps) {
         </div>
       </section>
     </main>
-  );
+  )
 }

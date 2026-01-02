@@ -368,11 +368,11 @@ export function getNotes(topicId: string, lessonId: string): Note[] {
   const notesDir = getNotesDir(topicId, lessonId);
   const indexPath = getNotesIndexPath(topicId, lessonId);
 
-  if (!fs.existsSync(notesDir) || !fs.existsSync(indexPath)) {
-    return [];
-  }
-
   try {
+    if (!fs.existsSync(notesDir) || !fs.existsSync(indexPath)) {
+      return [];
+    }
+
     const index: NotesIndex = JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
     const notes: Note[] = [];
 

@@ -32,3 +32,7 @@ export function getTempAudioFileName(): string {
     minute: '2-digit',
   })}`;
 }
+
+export function getAudioPlayerUrl(topicId: string, lessonId: string, noteId: string): string {
+  return `/api/topics/${topicId}/lessons/${lessonId}/notes/${noteId}/audio`;
+}
