@@ -39,6 +39,9 @@ const config: Config = {
           3: 'rgb(var(--surface-3) / <alpha-value>)',
           4: 'rgb(var(--surface-4) / <alpha-value>)',
         },
+        border: {
+          primary: 'rgb(var(--border-color) / <alpha-value>)',
+        },
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-out',

@@ -20,7 +20,7 @@ export default async function Home() {
           </div>
 
           {topics.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-3">
               {topics.map(topic => (
                 <TopicCard key={topic.id} topic={topic} />
               ))}

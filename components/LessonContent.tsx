@@ -13,34 +13,60 @@ export default function LessonContent({section}: LessonContentProps) {
   const [markdownContent, setMarkdownContent] = useState<string>('');
   const [loadingMarkdown, setLoadingMarkdown] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string>('');
+  const [imageUrl, setImageUrl] = useState<string>('');
+  const [textContent, setTextContent] = useState<string>('');
+  const [loadingText, setLoadingText] = useState(false);
 
-  // Load markdown content from file if needed
+  // Load content from file if needed
   useEffect(() => {
     if (typeof window === 'undefined') {
       setMarkdownContent(section.content || '');
       return;
     }
 
+    const topicMatch = window.location.pathname.match(/\/topic\/([^/]+)/);
+    const topicId = topicMatch ? topicMatch[1] : null;
+
     if (section.type === 'video' || (section.fileType === 'video' && section.filePath)) {
       // Extract topic ID from URL if videoUrl is not set
       let _videoUrl = section.videoUrl;
-      if (!_videoUrl && section.filePath && typeof window !== 'undefined') {
-        const topicMatch = window.location.pathname.match(/\/topic\/([^/]+)/);
-        if (topicMatch) {
-          _videoUrl = `/api/media/${topicMatch[1]}/${section.filePath}`;
-        }
+      if (!_videoUrl && section.filePath && topicId) {
+        _videoUrl = `/api/media/${topicId}/${section.filePath}`;
       }
       console.log('video url:', _videoUrl);
       setVideoUrl(_videoUrl || '');
-    }
-    if ((section.type === 'markdown' || section.fileType === 'markdown') && section.filePath && !section.content) {
-      setLoadingMarkdown(true);
-      // Extract topic ID from URL
-      const topicMatch = window.location.pathname.match(/\/topic\/([^/]+)/);
-      if (topicMatch) {
-        const topicId = topicMatch[1];
+    } else if (section.type === 'image' || (section.fileType === 'image' && section.filePath)) {
+      // Set image URL
+      if (section.filePath && topicId) {
+        setImageUrl(`/api/media/${topicId}/${section.filePath}`);
+      }
+    } else if (section.fileType === 'text' && section.filePath && !section.content) {
+      // Load text file content
+      if (topicId) {
+        setLoadingText(true);
         const mediaUrl = `/api/media/${topicId}/${section.filePath}`;
-
+        fetch(mediaUrl)
+          .then(res => res.text())
+          .then(text => {
+            setTextContent(text);
+            setLoadingText(false);
+          })
+          .catch(err => {
+            console.error('Error loading text file:', err);
+            setTextContent(section.content || '');
+            setLoadingText(false);
+          });
+      } else {
+        setTextContent(section.content || '');
+      }
+    } else if (
+      (section.type === 'markdown' || section.fileType === 'markdown') &&
+      section.filePath &&
+      !section.content
+    ) {
+      setLoadingMarkdown(true);
+      if (topicId) {
+        const mediaUrl = `/api/media/${topicId}/${section.filePath}`;
         fetch(mediaUrl)
           .then(res => res.text())
           .then(text => {
@@ -85,6 +111,59 @@ export default function LessonContent({section}: LessonContentProps) {
         {section.content && (
           <div className="prose max-w-none mt-3">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{section.content}</ReactMarkdown>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Render image section
+  if (section.type === 'image' || (section.fileType === 'image' && section.filePath)) {
+    return (
+      <div className="animate-fade-in">
+        <h2 className="text-lg font-bold font-display text-white mb-3 flex items-center gap-2">
+          <span className="w-0.5 h-6 bg-gradient-to-b from-primary-500 to-accent rounded-full" />
+          {section.title}
+        </h2>
+
+        {imageUrl && (
+          <div className="my-3">
+            <div className="relative w-full rounded-lg bg-surface-0 border border-surface-3 overflow-hidden">
+              <img
+                src={imageUrl}
+                alt={section.title}
+                className="w-full h-auto max-h-[600px] object-contain"
+                style={{maxHeight: '600px'}}
+              />
+            </div>
+          </div>
+        )}
+
+        {section.content && (
+          <div className="prose max-w-none mt-3">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{section.content}</ReactMarkdown>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Render text file section
+  if (section.fileType === 'text' && (section.filePath || section.content)) {
+    return (
+      <div className="animate-fade-in flex flex-col gap-4">
+        <h2 className="text-lg font-bold font-display text-white mb-3 flex items-center gap-2">
+          <span className="w-0.5 h-6 bg-gradient-to-b from-primary-500 to-accent rounded-full" />
+          {section.title}
+        </h2>
+
+        {loadingText ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-gray-400 text-sm">Loading content...</div>
+          </div>
+        ) : (
+          <div className="bg-surface-0 border border-surface-3 rounded-lg p-4 overflow-x-auto">
+            <pre className="text-sm text-gray-300 whitespace-pre-wrap font-mono">{textContent || section.content}</pre>
           </div>
         )}
       </div>

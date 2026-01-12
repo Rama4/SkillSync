@@ -1,6 +1,6 @@
 'use client';
 
-import type {Note} from '@/lib/types';
+import type {Note, Lesson} from '@/lib/types';
 import {useState, useEffect, useCallback} from 'react';
 import {Plus, Loader2} from 'lucide-react';
 import NoteItem from './NoteItem';
@@ -20,6 +20,7 @@ export default function NotesPanel({topicId, lessonId}: NotesPanelProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showDeleteAudioDialog, setShowDeleteAudioDialog] = useState(false);
   const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
+  const [lesson, setLesson] = useState<Lesson | null>(null);
 
   const loadNotes = useCallback(
     async (signal?: AbortSignal) => {
@@ -47,6 +48,20 @@ export default function NotesPanel({topicId, lessonId}: NotesPanelProps) {
 
     return () => controller.abort();
   }, [loadNotes]);
+
+  // Fetch lesson to get sections for grouping
+  useEffect(() => {
+    fetch(`/api/topics/${topicId}/lessons/${lessonId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.lesson) {
+          setLesson(data.lesson);
+        }
+      })
+      .catch(err => {
+        console.error('Error loading lesson:', err);
+      });
+  }, [topicId, lessonId]);
 
   const handleSave = useCallback(
     (note: Note) => {
@@ -168,25 +183,107 @@ export default function NotesPanel({topicId, lessonId}: NotesPanelProps) {
                 <p>No notes yet. Create your first note!</p>
               </div>
             ) : (
-              <div className="space-y-2">
-                {notes.map((note, index) => (
-                  <NoteItem
-                    key={`${note.id}-${index}`}
-                    note={note}
-                    topicId={topicId}
-                    lessonId={lessonId}
-                    onEdit={handleEdit}
-                    onDeleteNotePress={() => {
-                      setShowDeleteDialog(true);
-                      setDeletingNoteId(note.id);
-                    }}
-                    onDeleteAudio={() => {
-                      setShowDeleteAudioDialog(true);
-                      setDeletingNoteId(note.id);
-                    }}
-                  />
-                ))}
-              </div>
+              (() => {
+                // Group notes by section if lesson has multiple sections
+                const shouldGroup = (lesson?.sections?.length ?? 0) > 1;
+
+                if (shouldGroup) {
+                  const notesBySection: Record<string, Note[]> = {};
+                  const notesWithoutSection: Note[] = [];
+
+                  notes.forEach(note => {
+                    if (note.sectionId) {
+                      if (!notesBySection[note.sectionId]) {
+                        notesBySection[note.sectionId] = [];
+                      }
+                      notesBySection[note.sectionId].push(note);
+                    } else {
+                      notesWithoutSection.push(note);
+                    }
+                  });
+
+                  return (
+                    <div className="space-y-4">
+                      {lesson.sections.map(section => {
+                        const sectionNotes = notesBySection[section.id] || [];
+                        if (sectionNotes.length === 0) return null;
+
+                        return (
+                          <div key={section.id} className="space-y-2">
+                            <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-1">
+                              {section.title}
+                            </h4>
+                            {sectionNotes.map((note, index) => (
+                              <NoteItem
+                                key={`${note.id}-${index}`}
+                                note={note}
+                                topicId={topicId}
+                                lessonId={lessonId}
+                                onEdit={handleEdit}
+                                onDeleteNotePress={() => {
+                                  setShowDeleteDialog(true);
+                                  setDeletingNoteId(note.id);
+                                }}
+                                onDeleteAudio={() => {
+                                  setShowDeleteAudioDialog(true);
+                                  setDeletingNoteId(note.id);
+                                }}
+                              />
+                            ))}
+                          </div>
+                        );
+                      })}
+                      {notesWithoutSection.length > 0 && (
+                        <div className="space-y-2">
+                          <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-1">
+                            General Notes
+                          </h4>
+                          {notesWithoutSection.map((note, index) => (
+                            <NoteItem
+                              key={`${note.id}-${index}`}
+                              note={note}
+                              topicId={topicId}
+                              lessonId={lessonId}
+                              onEdit={handleEdit}
+                              onDeleteNotePress={() => {
+                                setShowDeleteDialog(true);
+                                setDeletingNoteId(note.id);
+                              }}
+                              onDeleteAudio={() => {
+                                setShowDeleteAudioDialog(true);
+                                setDeletingNoteId(note.id);
+                              }}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
+                // Default: show all notes without grouping
+                return (
+                  <div className="space-y-2">
+                    {notes.map((note, index) => (
+                      <NoteItem
+                        key={`${note.id}-${index}`}
+                        note={note}
+                        topicId={topicId}
+                        lessonId={lessonId}
+                        onEdit={handleEdit}
+                        onDeleteNotePress={() => {
+                          setShowDeleteDialog(true);
+                          setDeletingNoteId(note.id);
+                        }}
+                        onDeleteAudio={() => {
+                          setShowDeleteAudioDialog(true);
+                          setDeletingNoteId(note.id);
+                        }}
+                      />
+                    ))}
+                  </div>
+                );
+              })()
             )}
           </>
         )}

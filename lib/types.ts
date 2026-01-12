@@ -3,10 +3,7 @@ export interface TopicMeta {
   id: string;
   title: string;
   description: string;
-  icon: string;
-  color: string;
   lessons: LessonMeta[];
-  prerequisites: string[];
   tags: string[];
   lastUpdated: string;
 }
@@ -16,8 +13,6 @@ export interface LessonMeta {
   id: string;
   order: number;
   title: string;
-  duration: string;
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
 }
 
 // Full lesson content (stored in lessons/*.json)
@@ -26,8 +21,6 @@ export interface Lesson {
   title: string;
   topic: string;
   order: number;
-  duration: string;
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
   objectives: string[];
   sections: LessonSection[];
   quiz: QuizQuestion[];
@@ -40,13 +33,13 @@ export interface Lesson {
 
 export interface LessonSection {
   id: string;
-  type: 'content' | 'code' | 'exercise' | 'video' | 'markdown' | 'file';
+  type: 'content' | 'code' | 'exercise' | 'video' | 'markdown' | 'file' | 'image';
   title: string;
   content: string;
   codeLanguage?: string;
   videoUrl?: string;
   filePath?: string; // Path to media file relative to topic folder
-  fileType?: 'video' | 'markdown' | 'other'; // Type of file for rendering
+  fileType?: 'video' | 'markdown' | 'image' | 'text' | 'other'; // Type of file for rendering
 }
 
 export interface QuizQuestion {
@@ -77,7 +70,7 @@ export interface UserProgress {
 export interface MediaFile {
   path: string; // Source path relative to data directory
   name: string; // Display name
-  type: 'video' | 'markdown' | 'other';
+  type: 'video' | 'markdown' | 'image' | 'text' | 'other';
   size?: number;
 }
 
@@ -93,6 +86,7 @@ export interface TopicRegistrationRequest {
 export interface Note {
   id: string;
   lessonId: string;
+  sectionId?: string; // Optional section ID for notes mapped to specific sections
   title: string;
   markdown: string;
   audioFile?: string; // Path relative to notes folder, e.g., "audio/note-1.mp3"
@@ -105,4 +99,3 @@ export interface NotesIndex {
   notes: string[]; // Array of note IDs
   lastUpdated: string;
 }
-

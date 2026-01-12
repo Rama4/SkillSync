@@ -16,16 +16,6 @@ export default function TopicCard({ topic }: TopicCardProps) {
   return (
     <Link href={`/topic/${topic.id}`}>
       <div className="card card-hover p-3 h-full flex flex-col group">
-        {/* Header */}
-        <div className="flex items-center justify-center mb-2">
-          <div
-            className="text-3xl p-2 rounded-lg"
-            style={{ backgroundColor: `${topic.color}15` }}
-          >
-            {topic.icon}
-          </div>
-        </div>
-
         {/* Title & Description */}
         <h3 className="text-sm font-semibold font-display text-white mb-1 text-center group-hover:text-primary-400 transition-colors line-clamp-1">
           {topic.title}
@@ -60,11 +50,6 @@ export default function TopicCard({ topic }: TopicCardProps) {
           </div>
         )}
 
-        {/* CTA */}
-        <div className="flex items-center justify-center text-primary-400 text-xs font-medium group-hover:translate-x-1 transition-transform">
-          {progress > 0 ? "Continue" : "Start"}
-          <ChevronRight className="w-3 h-3 ml-0.5" />
-        </div>
       </div>
     </Link>
   );

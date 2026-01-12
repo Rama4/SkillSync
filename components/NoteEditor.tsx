@@ -1,6 +1,6 @@
 'use client';
 
-import type {Note} from '@/lib/types';
+import type {Note, Lesson} from '@/lib/types';
 import {useState, useEffect} from 'react';
 import {X, Loader2, Check} from 'lucide-react';
 import AudioRecorder from './AudioRecorder';
@@ -15,14 +15,44 @@ interface NoteEditorProps {
 }
 
 export default function NoteEditor({note, topicId, lessonId, onSave, onCancel}: NoteEditorProps) {
-  const {id: noteId, title: noteTitle, markdown: noteMarkdown, audioFile: noteAudioFile} = note || {};
+  const {
+    id: noteId,
+    title: noteTitle,
+    markdown: noteMarkdown,
+    audioFile: noteAudioFile,
+    sectionId: noteSectionId,
+  } = note || {};
   const [title, setTitle] = useState(noteTitle || '');
   const [markdown, setMarkdown] = useState(noteMarkdown || '');
+  const [sectionId, setSectionId] = useState<string>(noteSectionId || '');
   const [isSaving, setIsSaving] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string>('');
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [showDeleteAudioDialog, setShowDeleteAudioDialog] = useState(false);
   const [pendingAudioDelete, setPendingAudioDelete] = useState(false);
+  const [lesson, setLesson] = useState<Lesson | null>(null);
+  const [loadingLesson, setLoadingLesson] = useState(false);
+
+  // Fetch lesson to get sections
+  useEffect(() => {
+    setLoadingLesson(true);
+    fetch(`/api/topics/${topicId}/lessons/${lessonId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.lesson) {
+          setLesson(data.lesson);
+          // Auto-select section if lesson has only one section
+          if (data.lesson.sections.length === 1 && !noteSectionId) {
+            setSectionId(data.lesson.sections[0].id);
+          }
+        }
+        setLoadingLesson(false);
+      })
+      .catch(err => {
+        console.error('Error loading lesson:', err);
+        setLoadingLesson(false);
+      });
+  }, [topicId, lessonId, noteSectionId]);
 
   useEffect(() => {
     if (noteAudioFile) {
@@ -72,6 +102,9 @@ export default function NoteEditor({note, topicId, lessonId, onSave, onCancel}: 
       const formData = new FormData();
       formData.append('title', title);
       formData.append('markdown', markdown);
+      if (sectionId) {
+        formData.append('sectionId', sectionId);
+      }
 
       let workingNote: Note = note as Note;
 
@@ -114,6 +147,7 @@ export default function NoteEditor({note, topicId, lessonId, onSave, onCancel}: 
         body: JSON.stringify({
           title: title,
           markdown: markdown,
+          ...(sectionId ? {sectionId: sectionId} : {sectionId: null}),
           ...(savedAudioFile ? {audioFile: savedAudioFile} : {}),
           ...(pendingAudioDelete && !audioBlob ? {audioFile: null} : {}),
         }),
@@ -163,6 +197,23 @@ export default function NoteEditor({note, topicId, lessonId, onSave, onCancel}: 
             className="w-full px-3 py-2 bg-surface-2 border border-surface-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
           />
         </div>
+
+        {lesson && lesson.sections.length > 1 && (
+          <div>
+            <label className="block text-xs text-gray-400 mb-1.5">Section</label>
+            <select
+              value={sectionId}
+              onChange={e => setSectionId(e.target.value)}
+              className="w-full px-3 py-2 bg-surface-2 border border-surface-3 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm">
+              <option value="">No specific section</option>
+              {lesson.sections.map(section => (
+                <option key={section.id} value={section.id}>
+                  {section.title}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div>
           <textarea

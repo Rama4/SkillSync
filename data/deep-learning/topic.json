@@ -2,8 +2,6 @@
   "id": "deep-learning",
   "title": "Deep Learning",
   "description": "Master the fundamentals and advanced concepts of deep learning, from neural networks to cutting-edge architectures.",
-  "icon": "🧠",
-  "color": "#8B5CF6",
   "lessons": [
     {
       "id": "introduction-to-neural-networks",
@@ -27,7 +25,6 @@
       "difficulty": "intermediate"
     }
   ],
-  "prerequisites": [],
   "tags": ["machine-learning", "ai", "neural-networks", "python"],
   "lastUpdated": "2025-11-27"
 }

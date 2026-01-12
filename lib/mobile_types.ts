@@ -12,13 +12,8 @@ export interface TopicSummary {
   id: string;
   title: string;
   description: string;
-  icon: string;
-  color: string;
-  version: string;
   lastUpdated: string;
   lessonCount: number;
-  totalDuration: string;
-  difficulty: 'beginner' | 'intermediate' | 'advanced' | 'mixed';
   tags: string[];
 }
 

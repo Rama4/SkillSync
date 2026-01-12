@@ -18,6 +18,19 @@ Note: populating the audio playback url : resetting the audioFile field of note 
 
     done in DraggableNotesManager
 
+### ux improvements
+
+    deprecated fields in the topic, lesson, etc:
+        color, icon, version, etc
+    drag and drop handler:
+        using react-dnd with html5-backend packages
+        created a view for reordering notes within and between lessons
+        reorder lesson sections in the LessonSidebar
+    CRUD for lesson section
+    assign note with a lesson's section
+    reduce lesson content width to prevent overlap by sidebar.
+    remove lesson content overlap with bottom navigation bar
+
 ## Mobile App
 
 ### Dropping and re-initializing the local DB upon every app start
@@ -94,3 +107,10 @@ Using `react-native-svg` and `react-native-svg-transformer` to import svg icons 
 Using svg icons from [Open-Iconic](https://www.shadcn.io/icons/oi) and [Lucide](https://www.shadcn.io/icons/lucide)
 
 All SVGs use `fill="currentColor"` for dynamic coloring via `color` prop. See [SVG Icons Guide](mobile-app/docs/SVG_ICONS_GUIDE.md) for adding new icons.
+
+### ux improvements
+
+mobile:
+deprecated fields need to be removed in the files (stashed changes)
+more fields were deprecated: topic meta type.
+so after applying the stash, need to remove the deprecated fields in other files where used

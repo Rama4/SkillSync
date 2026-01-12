@@ -19,13 +19,17 @@ export function slugify(text: string): string {
 /**
  * Get file type based on extension
  */
-export function getFileType(filename: string): 'video' | 'markdown' | 'other' {
+export function getFileType(filename: string): 'video' | 'markdown' | 'image' | 'text' | 'other' {
   const ext = path.extname(filename).toLowerCase();
   const videoExts = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.mkv'];
   const markdownExts = ['.md', '.markdown'];
+  const imageExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp'];
+  const textExts = ['.txt', '.text'];
 
   if (videoExts.includes(ext)) return 'video';
   if (markdownExts.includes(ext)) return 'markdown';
+  if (imageExts.includes(ext)) return 'image';
+  if (textExts.includes(ext)) return 'text';
   return 'other';
 }
 
@@ -175,8 +179,6 @@ export function generateLessonFromMedia(
     title: title,
     topic: topicId,
     order: order,
-    duration: estimateDuration(mediaFile.type, mediaFile.size),
-    difficulty: 'beginner' as const,
     objectives: [`Learn from ${mediaFile.name}`],
     sections: [section],
     quiz: [],
@@ -202,18 +204,13 @@ export function generateTopicJson(
     id: lesson.id,
     order: lesson.order,
     title: lesson.title,
-    duration: lesson.duration,
-    difficulty: lesson.difficulty,
   }));
 
   return {
     id: topicId,
     title,
     description,
-    icon: '📚', // Default icon
-    color: '#8B5CF6', // Default color
     lessons: lessonMetas,
-    prerequisites: [],
     tags,
     lastUpdated: new Date().toISOString().split('T')[0],
   };
@@ -259,13 +256,8 @@ export function updateTopicsIndex(topicMeta: TopicMeta): void {
       id: string;
       title: string;
       description: string;
-      icon: string;
-      color: string;
-      version: string;
       lastUpdated: string;
       lessonCount: number;
-      totalDuration: string;
-      difficulty: string;
       tags: string[];
     }>;
   };
@@ -291,32 +283,14 @@ export function updateTopicsIndex(topicMeta: TopicMeta): void {
     };
   }
 
-  // Calculate total duration from lessons
-  const totalMinutes = topicMeta.lessons.reduce((acc, lesson) => {
-    const mins = parseInt(lesson.duration) || 0;
-    return acc + mins;
-  }, 0);
-
-  // Determine predominant difficulty
-  const difficulties = topicMeta.lessons.map(l => l.difficulty);
-  const difficultyCount = difficulties.reduce((acc, diff) => {
-    acc[diff] = (acc[diff] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-  const predominantDifficulty = Object.entries(difficultyCount).sort(([, a], [, b]) => b - a)[0]?.[0] || 'beginner';
-
   // Create topic summary for index
   const topicSummary = {
     id: topicMeta.id,
     title: topicMeta.title,
     description: topicMeta.description,
-    icon: '📚', // Default icon
-    color: '#8B5CF6', // Default color
     version: '1.0.0',
     lastUpdated: topicMeta.lastUpdated,
     lessonCount: topicMeta.lessons.length,
-    totalDuration: `${totalMinutes} min`,
-    difficulty: predominantDifficulty,
     tags: topicMeta.tags,
   };
 
@@ -497,4 +471,77 @@ export function saveAudioFile(
   fs.writeFileSync(audioPath, audioBuffer);
 
   return `audio/${noteId}.${extension}`;
+}
+
+/**
+ * Generate section ID
+ */
+export function generateSectionId(lessonId: string, index: number): string {
+  return `${lessonId}-section-${index + 1}`;
+}
+
+/**
+ * Get lesson file path
+ */
+export function getLessonPath(topicId: string, lessonId: string): string {
+  return path.join(DATA_DIR, topicId, 'lessons', `${lessonId}.json`);
+}
+
+/**
+ * Save a lesson to file system
+ */
+export function saveLesson(lesson: Lesson, topicId: string): void {
+  const lessonPath = getLessonPath(topicId, lesson.id);
+  const lessonsDir = path.dirname(lessonPath);
+
+  // Ensure lessons directory exists
+  if (!fs.existsSync(lessonsDir)) {
+    fs.mkdirSync(lessonsDir, {recursive: true});
+  }
+
+  // Update lastUpdated timestamp
+  lesson.lastUpdated = new Date().toISOString().split('T')[0];
+
+  // Save lesson file
+  fs.writeFileSync(lessonPath, JSON.stringify(lesson, null, 2), 'utf-8');
+}
+
+/**
+ * Delete a lesson from file system
+ */
+export function deleteLesson(lessonId: string, topicId: string): void {
+  const lessonPath = getLessonPath(topicId, lessonId);
+  const notesDir = getNotesDir(topicId, lessonId);
+
+  // Delete lesson file
+  if (fs.existsSync(lessonPath)) {
+    fs.unlinkSync(lessonPath);
+  }
+
+  // Delete notes directory recursively
+  if (fs.existsSync(notesDir)) {
+    fs.rmSync(notesDir, {recursive: true, force: true});
+  }
+}
+
+/**
+ * Update topic metadata with new lesson list
+ */
+export function updateTopicMeta(topicId: string, lessonMetas: LessonMeta[]): void {
+  const topicPath = path.join(DATA_DIR, topicId, 'topic.json');
+
+  if (!fs.existsSync(topicPath)) {
+    console.error(`Topic file not found: ${topicPath}`);
+    return;
+  }
+
+  try {
+    const topicMeta: TopicMeta = JSON.parse(fs.readFileSync(topicPath, 'utf-8'));
+    topicMeta.lessons = lessonMetas;
+    topicMeta.lastUpdated = new Date().toISOString().split('T')[0];
+
+    fs.writeFileSync(topicPath, JSON.stringify(topicMeta, null, 2), 'utf-8');
+  } catch (error) {
+    console.error(`Error updating topic metadata for ${topicId}:`, error);
+  }
 }
