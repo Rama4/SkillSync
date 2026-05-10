@@ -1,7 +1,6 @@
 import {NextRequest, NextResponse} from 'next/server';
-import {getNotes, getNotesDir, saveNote, saveAudioFile} from '@/lib/fileUtils';
-import fs from 'fs';
-import path from 'path';
+import {getNotes, saveNote, saveAudioFile, getAudioFile, deleteAudioFile} from '@/lib/data';
+import {Note} from '@/lib/types';
 
 interface RouteParams {
   params: Promise<{
@@ -16,41 +15,16 @@ export async function GET(request: NextRequest, {params}: RouteParams) {
   try {
     const {topicId, lessonId, noteId} = await params;
 
-    // Try different audio file extensions
-    const audioDir = path.join(getNotesDir(topicId, lessonId), 'audio');
-    const possibleExtensions = ['webm', 'mp3', 'm4a', 'wav', 'mp4'];
-    let audioPath: string | null = null;
-    let contentType = 'audio/mpeg';
+    const audioData = await getAudioFile(noteId, lessonId, topicId);
 
-    for (const ext of possibleExtensions) {
-      const testPath = path.join(audioDir, `${noteId}.${ext}`);
-      if (fs.existsSync(testPath)) {
-        audioPath = testPath;
-        contentType =
-          ext === 'webm'
-            ? 'audio/webm'
-            : ext === 'mp3'
-            ? 'audio/mpeg'
-            : ext === 'm4a'
-            ? 'audio/mp4'
-            : ext === 'wav'
-            ? 'audio/wav'
-            : 'audio/mp4';
-        break;
-      }
-    }
-
-    if (!audioPath || !fs.existsSync(audioPath)) {
+    if (!audioData) {
       return NextResponse.json({error: 'Audio file not found'}, {status: 404});
     }
 
-    const audioBuffer = fs.readFileSync(audioPath);
-    const stats = fs.statSync(audioPath);
-
-    return new NextResponse(audioBuffer, {
+    return new NextResponse(audioData.buffer, {
       headers: {
-        'Content-Type': contentType,
-        'Content-Length': stats.size.toString(),
+        'Content-Type': audioData.contentType,
+        'Content-Length': audioData.buffer.length.toString(),
         'Cache-Control': 'public, max-age=31536000, immutable',
         'Accept-Ranges': 'bytes',
       },
@@ -73,7 +47,7 @@ export async function POST(request: NextRequest, {params}: RouteParams) {
     }
 
     // Get existing note to update
-    const notes = getNotes(topicId, lessonId);
+    const notes = await getNotes(topicId, lessonId);
     const note = notes.find(n => n.id === noteId);
 
     if (!note) {
@@ -83,13 +57,13 @@ export async function POST(request: NextRequest, {params}: RouteParams) {
     // Save audio file
     const audioBuffer = Buffer.from(await audioFile.arrayBuffer());
     const extension = audioFile.name.split('.').pop() || 'webm';
-    const audioPath = saveAudioFile(audioBuffer, noteId, lessonId, topicId, extension);
+    const audioPath = await saveAudioFile(audioBuffer, noteId, lessonId, topicId, extension);
 
     // Update note with audio file path
     note.audioFile = audioPath;
     note.updatedAt = new Date().toISOString();
 
-    saveNote(note, topicId);
+    await saveNote(note, topicId);
 
     return NextResponse.json({
       success: true,
@@ -107,41 +81,22 @@ export async function DELETE(request: NextRequest, {params}: RouteParams) {
     const {topicId, lessonId, noteId} = await params;
 
     // Get existing note
-    const notes = getNotes(topicId, lessonId);
+    const notes = await getNotes(topicId, lessonId);
     const note = notes.find(n => n.id === noteId);
 
     if (!note) {
       return NextResponse.json({error: 'Note not found'}, {status: 404});
     }
 
-    // Delete audio files if they exist (try different extensions)
-    const audioDir = path.join(getNotesDir(topicId, lessonId), 'audio');
-    const possibleExtensions = ['webm', 'mp3', 'm4a', 'wav', 'mp4'];
-    let audioDeleted = false;
-
-    for (const ext of possibleExtensions) {
-      const audioPath = path.join(audioDir, `${noteId}.${ext}`);
-      if (fs.existsSync(audioPath)) {
-        fs.unlinkSync(audioPath);
-        audioDeleted = true;
-        break; // Only delete the first match
-      }
-    }
-
-    if (!audioDeleted) {
-      return NextResponse.json({error: 'Audio file not found'}, {status: 404});
-    }
+    // Delete audio file
+    await deleteAudioFile(noteId, lessonId, topicId);
 
     // Update note to remove audio file reference completely
-    console.log('Before deleting audioFile:', note.audioFile);
     delete note.audioFile;
     note.updatedAt = new Date().toISOString();
-    console.log('After deleting audioFile, note:', JSON.stringify(note, null, 2));
 
     // Save the updated note
-    saveNote(note, topicId);
-
-    console.log('Updated note saved without audio');
+    await saveNote(note, topicId);
 
     return NextResponse.json({
       success: true,

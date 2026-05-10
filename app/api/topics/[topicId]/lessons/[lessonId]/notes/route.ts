@@ -1,6 +1,6 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {Note} from '@/lib/types';
-import {getNotes, saveNote} from '@/lib/fileUtils';
+import {getNotes, saveNote, saveAudioFile} from '@/lib/data';
 
 function generateNoteId(): string {
   return `note-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
@@ -17,7 +17,7 @@ interface RouteParams {
 export async function GET(request: NextRequest, {params}: RouteParams) {
   try {
     const {topicId, lessonId} = await params;
-    const notes = getNotes(topicId, lessonId);
+    const notes = await getNotes(topicId, lessonId);
 
     return NextResponse.json({notes});
   } catch (error) {
@@ -55,15 +55,14 @@ export async function POST(request: NextRequest, {params}: RouteParams) {
 
     // Handle audio file if provided
     if (audioFile && audioFile.size > 0) {
-      const {saveAudioFile} = await import('@/lib/fileUtils');
       const audioBuffer = Buffer.from(await audioFile.arrayBuffer());
       const extension = audioFile.name.split('.').pop() || 'webm';
-      const audioPath = saveAudioFile(audioBuffer, noteId, lessonId, topicId, extension);
+      const audioPath = await saveAudioFile(audioBuffer, noteId, lessonId, topicId, extension);
       note.audioFile = audioPath;
     }
 
     // Save note
-    saveNote(note, topicId);
+    await saveNote(note, topicId);
 
     return NextResponse.json({note});
   } catch (error) {

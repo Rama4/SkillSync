@@ -103,7 +103,7 @@ export default function LessonNotesContainer({lesson, notes, onMoveNote, onReord
             </div>
           ) : (
             <div className="space-y-0">
-              {notes.map((note, index) => (
+              {notes?.map((note, index) => (
                 <div key={note.id}>
                   <DropPlaceholder
                     lessonId={lesson.id}

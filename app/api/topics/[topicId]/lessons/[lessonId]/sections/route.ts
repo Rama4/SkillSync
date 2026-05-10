@@ -1,8 +1,6 @@
-
 import { NextRequest, NextResponse } from 'next/server';
-import { getLessonPath } from '@/lib/fileUtils';
-import fs from 'fs';
-import { Lesson } from '@/lib/types';
+import { getLesson, saveLesson } from '@/lib/data';
+import { LessonSection } from '@/lib/types';
 
 interface RouteParams {
   params: Promise<{
@@ -10,6 +8,60 @@ interface RouteParams {
     lessonId: string;
   }>;
 }
+
+// POST - Create new section
+export async function POST(
+  request: NextRequest,
+  { params }: RouteParams
+) {
+  try {
+    const { topicId, lessonId } = await params;
+    const body = await request.json();
+
+    const lesson = await getLesson(topicId, lessonId);
+
+    if (!lesson) {
+      return NextResponse.json(
+        { error: 'Lesson not found' },
+        { status: 404 }
+      );
+    }
+
+    // Generate section ID
+    const sectionId = `section-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+    // Create new section
+    const newSection: LessonSection = {
+      id: sectionId,
+      title: body.title || 'Untitled Section',
+      type: body.type || 'text',
+      content: body.content || '',
+      ...(body.codeLanguage && { codeLanguage: body.codeLanguage }),
+      ...(body.videoUrl && { videoUrl: body.videoUrl }),
+      ...(body.filePath && { filePath: body.filePath }),
+      ...(body.fileType && { fileType: body.fileType }),
+    };
+
+    // Add section to lesson
+    lesson.sections.push(newSection);
+    lesson.lastUpdated = new Date().toISOString().split('T')[0];
+
+    await saveLesson(lesson, topicId);
+
+    return NextResponse.json({ 
+      success: true,
+      section: newSection 
+    });
+
+  } catch (error) {
+    console.error('Error creating section:', error);
+    return NextResponse.json(
+      { error: 'Failed to create section' },
+      { status: 500 }
+    );
+  }
+}
+
 
 export async function PUT(
   request: NextRequest,
@@ -27,29 +79,24 @@ export async function PUT(
       );
     }
 
-    const lessonPath = getLessonPath(topicId, lessonId);
+    const lesson = await getLesson(topicId, lessonId);
 
-    if (!fs.existsSync(lessonPath)) {
+    if (!lesson) {
       return NextResponse.json(
         { error: 'Lesson not found' },
         { status: 404 }
       );
     }
-
-    const lessonData: Lesson = JSON.parse(fs.readFileSync(lessonPath, 'utf-8'));
     
     // Update sections
-    lessonData.sections = sections;
-    lessonData.lastUpdated = new Date().toISOString().split('T')[0];
+    lesson.sections = sections;
+    lesson.lastUpdated = new Date().toISOString().split('T')[0];
 
-    // Create backup of the old file just in case
-    // fs.copyFileSync(lessonPath, `${lessonPath}.bak`);
-
-    fs.writeFileSync(lessonPath, JSON.stringify(lessonData, null, 2), 'utf-8');
+    await saveLesson(lesson, topicId);
 
     return NextResponse.json({ 
       success: true, 
-      lesson: lessonData 
+      lesson: lesson 
     });
 
   } catch (error) {

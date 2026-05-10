@@ -1,6 +1,6 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {Note} from '@/lib/types';
-import {getNotes, saveNote, deleteNote} from '@/lib/fileUtils';
+import {getNotes, saveNote, deleteNote} from '@/lib/data';
 
 interface RouteParams {
   params: Promise<{
@@ -17,7 +17,7 @@ export async function PUT(request: NextRequest, {params}: RouteParams) {
     const body = await request.json();
 
     // Get existing notes to find the one to update
-    const notes = getNotes(topicId, lessonId);
+    const notes = await getNotes(topicId, lessonId);
     const existingNote = notes.find(n => n.id === noteId);
 
     if (!existingNote) {
@@ -42,7 +42,7 @@ export async function PUT(request: NextRequest, {params}: RouteParams) {
       updatedNote.audioFile = body.audioFile;
     }
 
-    saveNote(updatedNote, topicId);
+    await saveNote(updatedNote, topicId);
 
     return NextResponse.json({note: updatedNote});
   } catch (error) {
@@ -56,7 +56,7 @@ export async function DELETE(request: NextRequest, {params}: RouteParams) {
   try {
     const {topicId, lessonId, noteId} = await params;
 
-    deleteNote(noteId, lessonId, topicId);
+    await deleteNote(noteId, lessonId, topicId);
 
     return NextResponse.json({success: true});
   } catch (error) {

@@ -1,97 +1,71 @@
-import {TopicMeta, Lesson, Note} from './types';
-import fs from 'fs';
-import path from 'path';
-import {getNotes} from './fileUtils';
+import { TopicMeta, Lesson, Note } from './types';
+import { IDataProvider } from './dataProvider';
+import { FileSystemProvider } from './providers/fs';
+import { GoogleDriveProvider } from './providers/drive';
 
-const DATA_DIR = path.join(process.cwd(), 'data');
+// Determine which provider to use
+const isDrive = process.env.DATA_SOURCE === 'drive';
 
-// Get all available topics
+export const dataProvider: IDataProvider = isDrive 
+  ? new GoogleDriveProvider() 
+  : new FileSystemProvider();
+
+console.log(`Using Data Provider: ${isDrive ? 'Google Drive' : 'File System'}`);
+
+// Re-export methods for backward compatibility
 export async function getTopics(): Promise<TopicMeta[]> {
-  const topics: TopicMeta[] = [];
-
-  try {
-    const topicDirs = fs
-      .readdirSync(DATA_DIR, {withFileTypes: true})
-      .filter(dirent => dirent.isDirectory())
-      .map(dirent => dirent.name);
-
-    for (const dir of topicDirs) {
-      const topicPath = path.join(DATA_DIR, dir, 'topic.json');
-      if (fs.existsSync(topicPath)) {
-        const topicData = JSON.parse(fs.readFileSync(topicPath, 'utf-8'));
-        topics.push(topicData);
-      }
-    }
-  } catch (error) {
-    console.error('Error reading topics:', error);
-  }
-
-  return topics;
+  return dataProvider.getTopics();
 }
 
-// Get a specific topic by ID
 export async function getTopic(topicId: string): Promise<TopicMeta | null> {
-  try {
-    const topicPath = path.join(DATA_DIR, topicId, 'topic.json');
-    if (fs.existsSync(topicPath)) {
-      return JSON.parse(fs.readFileSync(topicPath, 'utf-8'));
-    }
-  } catch (error) {
-    console.error(`Error reading topic ${topicId}:`, error);
-  }
-  return null;
+  return dataProvider.getTopic(topicId);
 }
 
-// Get a specific lesson
 export async function getLesson(topicId: string, lessonId: string): Promise<Lesson | null> {
-  try {
-    const lessonPath = path.join(DATA_DIR, topicId, 'lessons', `${lessonId}.json`);
-    if (fs.existsSync(lessonPath)) {
-      return JSON.parse(fs.readFileSync(lessonPath, 'utf-8'));
-    }
-  } catch (error) {
-    console.error(`Error reading lesson ${lessonId}:`, error);
-  }
-  return null;
+  return dataProvider.getLesson(topicId, lessonId);
 }
 
-// Get all lessons for a topic
 export async function getLessons(topicId: string): Promise<Lesson[]> {
-  const lessons: Lesson[] = [];
-
-  try {
-    const lessonsDir = path.join(DATA_DIR, topicId, 'lessons');
-    if (fs.existsSync(lessonsDir)) {
-      const lessonFiles = fs.readdirSync(lessonsDir).filter(file => file.endsWith('.json'));
-
-      for (const file of lessonFiles) {
-        const lessonPath = path.join(lessonsDir, file);
-        const lessonData = JSON.parse(fs.readFileSync(lessonPath, 'utf-8'));
-        lessons.push(lessonData);
-      }
-
-      // Sort by order
-      lessons.sort((a, b) => a.order - b.order);
-    }
-  } catch (error) {
-    console.error(`Error reading lessons for ${topicId}:`, error);
-  }
-
-  return lessons;
+  return dataProvider.getLessons(topicId);
 }
 
-// Get all notes for a topic
 export async function getNotesByTopic(topicId: string): Promise<Note[]> {
-  const notes: Note[] = [];
-  try {
-    const lessons = await getLessons(topicId);
-    for (const lesson of lessons) {
-      const lessonNotes = getNotes(topicId, lesson.id);
-      notes.push(...lessonNotes);
-    }
-    return notes;
-  } catch (error) {
-    console.error(`Error reading notes for ${topicId}:`, error);
-  }
-  return [];
+  return dataProvider.getNotesByTopic(topicId);
+}
+
+// Additional exports for methods that might be used by API routes
+export async function getNotes(topicId: string, lessonId: string): Promise<Note[]> {
+  return dataProvider.getNotes(topicId, lessonId);
+}
+
+export async function saveNote(note: Note, topicId: string): Promise<void> {
+  return dataProvider.saveNote(note, topicId);
+}
+
+export async function deleteNote(noteId: string, lessonId: string, topicId: string): Promise<void> {
+  return dataProvider.deleteNote(noteId, lessonId, topicId);
+}
+
+export async function saveAudioFile(audioBuffer: Buffer, noteId: string, lessonId: string, topicId: string, extension?: string): Promise<string> {
+  return dataProvider.saveAudioFile(audioBuffer, noteId, lessonId, topicId, extension);
+}
+
+export async function getAudioFile(noteId: string, lessonId: string, topicId: string): Promise<{ buffer: Buffer; contentType: string } | null> {
+  return dataProvider.getAudioFile(noteId, lessonId, topicId);
+}
+
+export async function deleteAudioFile(noteId: string, lessonId: string, topicId: string): Promise<void> {
+  return dataProvider.deleteAudioFile(noteId, lessonId, topicId);
+}
+
+export async function saveLesson(lesson: Lesson, topicId: string): Promise<void> {
+  return dataProvider.saveLesson(lesson, topicId);
+}
+
+export async function deleteLesson(lessonId: string, topicId: string): Promise<void> {
+  return dataProvider.deleteLesson(lessonId, topicId);
+}
+
+export async function updateTopic(topic: TopicMeta): Promise<void> {
+  return dataProvider.updateTopic(topic);
 }

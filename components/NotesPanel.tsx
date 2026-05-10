@@ -22,18 +22,29 @@ export default function NotesPanel({topicId, lessonId}: NotesPanelProps) {
   const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
   const [lesson, setLesson] = useState<Lesson | null>(null);
 
+  useEffect(() => {
+    console.log('[NotesPanel] Notes state changed:', notes, 'length:', notes?.length);
+  }, [notes]);
+
   const loadNotes = useCallback(
     async (signal?: AbortSignal) => {
       setLoading(true);
       try {
+        console.log('[NotesPanel] Fetching notes for:', {topicId, lessonId});
         const response = await fetch(`/api/topics/${topicId}/lessons/${lessonId}/notes`, {signal});
+        console.log('[NotesPanel] Response status:', response.status, response.ok);
         if (response.ok) {
           const data = await response.json();
-          setNotes(data.notes || []);
+          console.log('[NotesPanel] Raw API response:', data);
+          console.log('[NotesPanel] data.notes type:', typeof data?.notes, 'isArray:', Array.isArray(data?.notes));
+          console.log('[NotesPanel] data.notes value:', data?.notes);
+          const notesToSet = Array.isArray(data?.notes) ? data.notes : [];
+          console.log('[NotesPanel] Setting notes to:', notesToSet, 'length:', notesToSet.length);
+          setNotes(notesToSet);
         }
       } catch (error) {
         if ((error as Error).name !== 'AbortError') {
-          console.error('Error loading notes:', error);
+          console.error('[NotesPanel] Error loading notes:', error);
         }
       } finally {
         setLoading(false);
@@ -264,7 +275,7 @@ export default function NotesPanel({topicId, lessonId}: NotesPanelProps) {
                 // Default: show all notes without grouping
                 return (
                   <div className="space-y-2">
-                    {notes.map((note, index) => (
+                    {notes?.map((note, index) => (
                       <NoteItem
                         key={`${note.id}-${index}`}
                         note={note}

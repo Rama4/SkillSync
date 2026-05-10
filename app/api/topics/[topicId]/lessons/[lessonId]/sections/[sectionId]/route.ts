@@ -1,7 +1,7 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {LessonSection} from '@/lib/types';
-import {saveLesson, getFileType} from '@/lib/fileUtils';
-import {getLesson} from '@/lib/data';
+import {saveLesson, getLesson} from '@/lib/data';
+import {getFileType} from '@/lib/fileUtils';
 
 interface RouteParams {
   params: Promise<{
@@ -70,7 +70,7 @@ export async function PUT(request: NextRequest, {params}: RouteParams) {
     };
 
     lesson.sections[sectionIndex] = updatedSection;
-    saveLesson(lesson, topicId);
+    await saveLesson(lesson, topicId);
 
     return NextResponse.json({section: updatedSection});
   } catch (error) {
@@ -96,7 +96,7 @@ export async function DELETE(request: NextRequest, {params}: RouteParams) {
 
     // Remove section
     lesson.sections.splice(sectionIndex, 1);
-    saveLesson(lesson, topicId);
+    await saveLesson(lesson, topicId);
 
     return NextResponse.json({success: true});
   } catch (error) {

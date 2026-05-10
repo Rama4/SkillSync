@@ -1,7 +1,7 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {Lesson, LessonMeta} from '@/lib/types';
-import {saveLesson, updateTopicMeta, generateLessonId} from '@/lib/fileUtils';
-import {getTopic, getLessons} from '@/lib/data';
+import {generateLessonId} from '@/lib/fileUtils';
+import {getTopic, getLessons, saveLesson, updateTopic} from '@/lib/data';
 
 interface RouteParams {
   params: Promise<{
@@ -54,23 +54,25 @@ export async function POST(request: NextRequest, {params}: RouteParams) {
     if (existingLessons.length > 0) {
       const previousLesson = existingLessons[existingLessons.length - 1];
       previousLesson.nextLesson = lessonId;
-      saveLesson(previousLesson, topicId);
+      await saveLesson(previousLesson, topicId);
     }
 
     // Save new lesson
-    saveLesson(newLesson, topicId);
+    await saveLesson(newLesson, topicId);
 
     // Update topic metadata
     const topic = await getTopic(topicId);
     if (topic) {
-      const lessonMetas: LessonMeta[] = [...existingLessons, newLesson]
+      // Re-fetch or append
+      const allLessons = [...existingLessons, newLesson];
+      topic.lessons = allLessons
         .sort((a, b) => a.order - b.order)
         .map(lesson => ({
           id: lesson.id,
           order: lesson.order,
           title: lesson.title,
         }));
-      updateTopicMeta(topicId, lessonMetas);
+      await updateTopic(topic);
     }
 
     return NextResponse.json({lesson: newLesson});

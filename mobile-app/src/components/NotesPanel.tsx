@@ -188,7 +188,7 @@ const NotesPanel = forwardRef<NotesPanelHandle, NotesPanelProps>(
           </View>
         ) : (
           <ScrollView style={styles.notesList} showsVerticalScrollIndicator={false}>
-            {notes.map(note => (
+            {notes?.map(note => (
               <NoteItem
                 key={note.id}
                 note={note}

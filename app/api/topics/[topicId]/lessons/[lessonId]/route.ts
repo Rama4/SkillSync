@@ -1,7 +1,6 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {Lesson, LessonMeta} from '@/lib/types';
-import {saveLesson, deleteLesson, updateTopicMeta} from '@/lib/fileUtils';
-import {getTopic, getLessons, getLesson} from '@/lib/data';
+import {getTopic, getLessons, getLesson, saveLesson, deleteLesson, updateTopic} from '@/lib/data';
 
 interface RouteParams {
   params: Promise<{
@@ -49,20 +48,20 @@ export async function PUT(request: NextRequest, {params}: RouteParams) {
       lastUpdated: new Date().toISOString().split('T')[0],
     };
 
-    saveLesson(updatedLesson, topicId);
+    await saveLesson(updatedLesson, topicId);
 
     // Update topic metadata
     const topic = await getTopic(topicId);
     if (topic) {
       const allLessons = await getLessons(topicId);
-      const lessonMetas: LessonMeta[] = allLessons
+      topic.lessons = allLessons
         .sort((a, b) => a.order - b.order)
         .map(lesson => ({
           id: lesson.id,
           order: lesson.order,
           title: lesson.title,
         }));
-      updateTopicMeta(topicId, lessonMetas);
+      await updateTopic(topic);
     }
 
     return NextResponse.json({lesson: updatedLesson});
@@ -88,32 +87,32 @@ export async function DELETE(request: NextRequest, {params}: RouteParams) {
       const previousLesson = allLessons.find(l => l.id === lesson.previousLesson);
       if (previousLesson) {
         previousLesson.nextLesson = lesson.nextLesson;
-        saveLesson(previousLesson, topicId);
+        await saveLesson(previousLesson, topicId);
       }
     }
     if (lesson.nextLesson) {
       const nextLesson = allLessons.find(l => l.id === lesson.nextLesson);
       if (nextLesson) {
         nextLesson.previousLesson = lesson.previousLesson;
-        saveLesson(nextLesson, topicId);
+        await saveLesson(nextLesson, topicId);
       }
     }
 
     // Delete lesson
-    deleteLesson(lessonId, topicId);
+    await deleteLesson(lessonId, topicId);
 
     // Update topic metadata
     const topic = await getTopic(topicId);
     if (topic) {
       const remainingLessons = await getLessons(topicId);
-      const lessonMetas: LessonMeta[] = remainingLessons
+      topic.lessons = remainingLessons
         .sort((a, b) => a.order - b.order)
         .map(l => ({
           id: l.id,
           order: l.order,
           title: l.title,
         }));
-      updateTopicMeta(topicId, lessonMetas);
+      await updateTopic(topic);
     }
 
     return NextResponse.json({success: true});

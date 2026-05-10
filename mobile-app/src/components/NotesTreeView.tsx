@@ -181,7 +181,7 @@ const NotesTreeView: React.FC<NotesTreeViewProps> = ({topicId}) => {
 
             {isExpanded && (
               <View style={styles.notesContainer}>
-                {notes.map(note => (
+                {notes?.map(note => (
                   <NoteItem
                     key={note.id}
                     note={note}
