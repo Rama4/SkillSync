@@ -3,6 +3,7 @@
 import {useState, useEffect} from 'react';
 import Header from '@/components/Header';
 import LessonContent from '@/components/LessonContent';
+import LessonAudioPlayer from '@/components/LessonAudioPlayer';
 import LessonSidebar from '@/components/LessonSidebar';
 import SectionEditor from '@/components/SectionEditor';
 import {TopicMeta, Lesson, LessonSection} from '@/lib/types';
@@ -136,6 +137,19 @@ export default function LessonView({topic, lesson: initialLesson}: LessonViewPro
               </div>
               <h1 className="text-xl font-bold font-display text-white mb-2">{lesson.title}</h1>
             </div>
+
+            {!showSectionEditor && (
+              <LessonAudioPlayer
+                topicId={topic.id}
+                lessonId={lesson.id}
+                lessonTitle={lesson.title}
+                onEnded={() => {
+                  if (lesson.nextLesson) {
+                    window.location.href = `/topic/${topic.id}/lesson/${lesson.nextLesson}`;
+                  }
+                }}
+              />
+            )}
 
             {showSectionEditor ? (
               <div className="mb-6">

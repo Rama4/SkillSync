@@ -17,9 +17,9 @@ export async function POST(request: NextRequest) {
     const body: TopicRegistrationRequest = await request.json();
 
     // Validate request
-    if (!body.title || !body.mediaFiles || body.mediaFiles.length === 0) {
+    if (!body.title) {
       return NextResponse.json(
-        { error: "Title and at least one media file are required" },
+        { error: "Title is required" },
         { status: 400 }
       );
     }

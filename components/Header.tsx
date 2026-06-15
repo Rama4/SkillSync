@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, Zap, Menu, X, Plus } from "lucide-react";
+import { BookOpen, Zap, Menu, X, Plus, Workflow } from "lucide-react";
 import { useState } from "react";
 
 export default function Header() {
@@ -39,6 +39,13 @@ export default function Header() {
             >
               <Plus className="w-3.5 h-3.5" />
               Register Topic
+            </Link>
+            <Link
+              href="/pipeline"
+              className="text-gray-300 hover:text-white transition-colors flex items-center gap-1.5 text-sm"
+            >
+              <Workflow className="w-3.5 h-3.5" />
+              Pipeline
             </Link>
             <Link
               href="/"
@@ -80,6 +87,14 @@ export default function Header() {
               >
                 <Plus className="w-3.5 h-3.5" />
                 Register Topic
+              </Link>
+              <Link
+                href="/pipeline"
+                className="text-gray-300 hover:text-white transition-colors flex items-center gap-2 py-1.5 text-sm"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Workflow className="w-3.5 h-3.5" />
+                Pipeline
               </Link>
               <Link
                 href="/"

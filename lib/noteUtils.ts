@@ -36,3 +36,7 @@ export function getTempAudioFileName(): string {
 export function getAudioPlayerUrl(topicId: string, lessonId: string, noteId: string): string {
   return `/api/topics/${topicId}/lessons/${lessonId}/notes/${noteId}/audio`;
 }
+
+export function getTranscriptUrl(topicId: string, lessonId: string, noteId: string): string {
+  return `/api/topics/${topicId}/lessons/${lessonId}/notes/${noteId}/transcript`;
+}

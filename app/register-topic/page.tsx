@@ -86,11 +86,6 @@ export default function RegisterTopicPage() {
       return;
     }
     
-    if (selectedFiles.length === 0) {
-      setError('Please select at least one media file');
-      return;
-    }
-    
     setLoading(true);
     
     try {
@@ -321,7 +316,7 @@ export default function RegisterTopicPage() {
               </button>
               <button
                 type="submit"
-                disabled={loading || !title.trim() || selectedFiles.length === 0}
+                disabled={loading || !title.trim()}
                 className="flex-1 px-4 py-1.5 text-sm rounded-lg bg-gradient-to-r from-primary-600 to-primary-500 text-white font-semibold hover:from-primary-500 hover:to-primary-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
               >
                 {loading ? (

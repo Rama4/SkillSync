@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import {MediaFile, TopicMeta, LessonMeta, Lesson, Note, NotesIndex} from './types';
+import {MediaFile, TopicMeta, LessonMeta, Lesson, Note, NotesIndex, LessonAudioManifest} from './types';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 
@@ -478,6 +478,73 @@ export function saveAudioFile(
  */
 export function generateSectionId(lessonId: string, index: number): string {
   return `${lessonId}-section-${index + 1}`;
+}
+
+/**
+ * Directory holding a lesson's generated narration audio + manifest.
+ * Lives parallel to the notes/audio layout: lessons/{lessonId}/audio/.
+ */
+export function getLessonAudioDir(topicId: string, lessonId: string): string {
+  return path.join(DATA_DIR, topicId, 'lessons', lessonId, 'audio');
+}
+
+/**
+ * Path to a lesson narration file, relative to the topic folder.
+ * Used both on disk (joined with DATA_DIR) and as the suffix of an /api/media URL.
+ */
+export function getLessonAudioRelPath(lessonId: string, fileName: string): string {
+  return `lessons/${lessonId}/audio/${fileName}`;
+}
+
+export function getLessonAudioManifestPath(topicId: string, lessonId: string): string {
+  return path.join(getLessonAudioDir(topicId, lessonId), 'manifest.json');
+}
+
+/**
+ * Write a lesson narration buffer and return its path relative to the topic folder.
+ */
+export function saveLessonAudio(
+  audioBuffer: Buffer,
+  fileName: string,
+  lessonId: string,
+  topicId: string,
+): string {
+  const audioDir = getLessonAudioDir(topicId, lessonId);
+  if (!fs.existsSync(audioDir)) {
+    fs.mkdirSync(audioDir, {recursive: true});
+  }
+  fs.writeFileSync(path.join(audioDir, fileName), audioBuffer);
+  return getLessonAudioRelPath(lessonId, fileName);
+}
+
+export function saveLessonAudioManifest(
+  manifest: LessonAudioManifest,
+  topicId: string,
+  lessonId: string,
+): void {
+  const audioDir = getLessonAudioDir(topicId, lessonId);
+  if (!fs.existsSync(audioDir)) {
+    fs.mkdirSync(audioDir, {recursive: true});
+  }
+  fs.writeFileSync(
+    getLessonAudioManifestPath(topicId, lessonId),
+    JSON.stringify(manifest, null, 2),
+    'utf-8',
+  );
+}
+
+export function getLessonAudioManifest(
+  topicId: string,
+  lessonId: string,
+): LessonAudioManifest | null {
+  const manifestPath = getLessonAudioManifestPath(topicId, lessonId);
+  if (!fs.existsSync(manifestPath)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+  } catch (error) {
+    console.error(`Error reading lesson audio manifest for ${lessonId}:`, error);
+    return null;
+  }
 }
 
 /**

@@ -18,6 +18,7 @@ import {RootStackParamList} from '../../../lib/mobile_types';
 import {LessonSection, Lesson} from '../../../lib/types';
 import {databaseService} from '@/services/database';
 import NotesPanel, {NotesPanelHandle} from '@/components/NotesPanel';
+import LessonAudioPlayer from '@/components/LessonAudioPlayer';
 import {isFileOrFolderExists} from '@/utils/fsUtils';
 import {DOWNLOAD_DATA_PATH} from '@/utils/constants';
 import {API_BASE_URL} from '@/utils/constants';
@@ -491,6 +492,18 @@ const LessonScreen: React.FC<Props> = ({navigation, route}) => {
         </View>
       </View>
 
+      {/* Lesson narration (podcast-style) audio player */}
+      {!isEditMode && (
+        <View style={styles.audioPlayerContainer}>
+          <LessonAudioPlayer
+            topicId={topicId}
+            lessonId={lessonId}
+            lessonTitle={lessonTitle}
+            lesson={lesson}
+          />
+        </View>
+      )}
+
       {/* Section Content */}
       <View style={styles.contentContainer}>
         <ScrollView
@@ -748,6 +761,10 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
+  },
+  audioPlayerContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 8,
   },
   scrollView: {
     flex: 1,

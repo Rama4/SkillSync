@@ -4,6 +4,7 @@ import {databaseService} from '@/services/database';
 import {getFullPath, isFileOrFolderExists, readJsonFile, getFoldersInDirectory} from '@/utils/fsUtils';
 import {PermissionsAndroid, Platform} from 'react-native';
 import {DOWNLOAD_DATA_PATH, EXTERNAL_DATA_PATH, TOPICS_FILE_NAME} from '@/utils/constants';
+import {downloadLessonAudio} from '@/utils/lessonAudioUtils';
 
 // Will be set dynamically based on accessibility
 let PublicDataPath = DOWNLOAD_DATA_PATH;
@@ -272,6 +273,9 @@ class SyncService {
           try {
             const lessonData = await this.fetchLessonData(topicData.id, lessonMeta.id);
             await databaseService.saveLesson(lessonData);
+            // Best-effort: pull narration audio for offline listening. Non-fatal
+            // if the web server is unreachable or the lesson has no narration.
+            await downloadLessonAudio(topicData.id, lessonMeta.id).catch(() => null);
             currentItem++;
             this.updateStatus({
               progress: {current: currentItem, total: totalItems},

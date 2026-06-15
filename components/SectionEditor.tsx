@@ -14,9 +14,9 @@ interface SectionEditorProps {
 
 export default function SectionEditor({section, topicId, lessonId, onSave, onCancel}: SectionEditorProps) {
   const [title, setTitle] = useState(section?.title || '');
-  const [type, setType] = useState<'content' | 'code' | 'exercise' | 'video' | 'markdown' | 'file' | 'image'>(
-    section?.type || 'content',
-  );
+  const [type, setType] = useState<
+    'content' | 'code' | 'exercise' | 'video' | 'markdown' | 'file' | 'image' | 'audio'
+  >(section?.type || 'content');
   const [content, setContent] = useState(section?.content || '');
   const [filePath, setFilePath] = useState(section?.filePath || '');
   const [codeLanguage, setCodeLanguage] = useState(section?.codeLanguage || '');

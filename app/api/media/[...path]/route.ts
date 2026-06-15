@@ -34,6 +34,11 @@ export async function GET(request: NextRequest, {params}: {params: Promise<{path
     else if (ext === '.mov') contentType = 'video/quicktime';
     else if (ext === '.avi') contentType = 'video/x-msvideo';
     else if (ext === '.mkv') contentType = 'video/x-matroska';
+    else if (ext === '.mp3') contentType = 'audio/mpeg';
+    else if (ext === '.m4a') contentType = 'audio/mp4';
+    else if (ext === '.wav') contentType = 'audio/wav';
+    else if (ext === '.aac') contentType = 'audio/aac';
+    else if (ext === '.flac') contentType = 'audio/flac';
     else if (ext === '.md' || ext === '.markdown') contentType = 'text/markdown';
     else if (ext === '.json') contentType = 'application/json';
     else if (ext === '.txt' || ext === '.text') contentType = 'text/plain';

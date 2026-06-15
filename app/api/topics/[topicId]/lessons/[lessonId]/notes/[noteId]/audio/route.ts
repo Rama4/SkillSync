@@ -44,13 +44,40 @@ export async function GET(request: NextRequest, {params}: RouteParams) {
       return NextResponse.json({error: 'Audio file not found'}, {status: 404});
     }
 
-    const audioBuffer = fs.readFileSync(audioPath);
     const stats = fs.statSync(audioPath);
+    const fileSize = stats.size;
+    const range = request.headers.get('range');
 
-    return new NextResponse(audioBuffer, {
+    // Stream a partial response when the player requests a byte range. This keeps
+    // memory flat and makes seeking through long recordings reliable.
+    if (range) {
+      const parts = range.replace(/bytes=/, '').split('-');
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+      const chunkSize = end - start + 1;
+
+      // @ts-ignore: fs streams work as a NextResponse body even if types disagree.
+      const stream = fs.createReadStream(audioPath, {start, end});
+
+      return new NextResponse(stream as any, {
+        status: 206,
+        headers: {
+          'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+          'Accept-Ranges': 'bytes',
+          'Content-Length': chunkSize.toString(),
+          'Content-Type': contentType,
+          'Cache-Control': 'public, max-age=31536000, immutable',
+        },
+      });
+    }
+
+    // @ts-ignore: fs streams work as a NextResponse body even if types disagree.
+    const stream = fs.createReadStream(audioPath);
+
+    return new NextResponse(stream as any, {
       headers: {
         'Content-Type': contentType,
-        'Content-Length': stats.size.toString(),
+        'Content-Length': fileSize.toString(),
         'Cache-Control': 'public, max-age=31536000, immutable',
         'Accept-Ranges': 'bytes',
       },

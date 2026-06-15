@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {LessonSection} from '@/lib/types';
 import {useState, useEffect} from 'react';
+import AudioPlayer from './AudioPlayer';
 
 interface LessonContentProps {
   section: LessonSection;
@@ -14,6 +15,7 @@ export default function LessonContent({section}: LessonContentProps) {
   const [loadingMarkdown, setLoadingMarkdown] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string>('');
   const [imageUrl, setImageUrl] = useState<string>('');
+  const [audioUrl, setAudioUrl] = useState<string>('');
   const [textContent, setTextContent] = useState<string>('');
   const [loadingText, setLoadingText] = useState(false);
 
@@ -39,6 +41,11 @@ export default function LessonContent({section}: LessonContentProps) {
       // Set image URL
       if (section.filePath && topicId) {
         setImageUrl(`/api/media/${topicId}/${section.filePath}`);
+      }
+    } else if (section.type === 'audio' || section.fileType === 'audio') {
+      const relPath = section.audioPath || section.filePath;
+      if (relPath && topicId) {
+        setAudioUrl(`/api/media/${topicId}/${relPath}`);
       }
     } else if (section.fileType === 'text' && section.filePath && !section.content) {
       // Load text file content
@@ -137,6 +144,32 @@ export default function LessonContent({section}: LessonContentProps) {
               />
             </div>
           </div>
+        )}
+
+        {section.content && (
+          <div className="prose max-w-none mt-3">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{section.content}</ReactMarkdown>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Render audio section
+  if (section.type === 'audio' || section.fileType === 'audio') {
+    return (
+      <div className="animate-fade-in">
+        <h2 className="text-lg font-bold font-display text-white mb-3 flex items-center gap-2">
+          <span className="w-0.5 h-6 bg-gradient-to-b from-primary-500 to-accent rounded-full" />
+          {section.title}
+        </h2>
+
+        {audioUrl ? (
+          <div className="my-3">
+            <AudioPlayer audioUrl={audioUrl} title={section.title} />
+          </div>
+        ) : (
+          <div className="text-gray-400 text-sm py-4">No audio available for this section.</div>
         )}
 
         {section.content && (

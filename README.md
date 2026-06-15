@@ -141,14 +141,73 @@ SkillSync/
 - **Icons**: Lucide React
 - **Language**: TypeScript
 
+## Pipeline
+
+Discrete, idempotent steps you run on demand. Nothing auto-triggers anything else, and every step has a dry-run "plan" that previews what it would do.
+
+### Setup (one-time)
+
+1. Get a free Groq API key (no credit card) at [console.groq.com](https://console.groq.com).
+2. Copy the env template and paste your key:
+
+```bash
+cp .env.local.example .env.local
+# edit .env.local and set GROQ_API_KEY=gsk_...
+```
+
+3. Install deps if you haven't: `pnpm install`.
+
+### Web UI
+
+`pnpm dev`, then open [http://localhost:3000/pipeline](http://localhost:3000/pipeline).
+
+Each step is a card with two buttons:
+
+- **Plan** — read-only preview of what the step would do, with one row per work item. Zero side effects.
+- **Run selected** — executes only the checked items, streaming progress live via SSE.
+
+A scope picker at the top lets you target `all topics` or one specific `topic:<id>`.
+
+### CLI
+
+Same step registry, terminal driver. Useful for cron / Makefiles / quick checks.
+
+```bash
+pnpm pipeline list
+pnpm pipeline plan transcribe-audio
+pnpm pipeline plan transcribe-audio --scope topic:deep-learning
+pnpm pipeline run  transcribe-audio --scope topic:deep-learning
+pnpm pipeline run  transcribe-audio --items some-id,other-id
+pnpm pipeline run  transcribe-audio --dry-run     # alias for plan
+pnpm pipeline run  health-check
+```
+
+### Built-in steps
+
+| Step | Category | What it does |
+|---|---|---|
+| `transcribe-audio` | process | Scans `data/**/notes/audio/*.{webm,mp3,m4a,wav,mp4,ogg}`, finds files without a `{noteId}.transcript.json` sidecar, transcribes them via Groq `whisper-large-v3-turbo`. Re-runs are no-ops. |
+| `health-check` | maintenance | Read-only audit: orphan audio, missing transcripts, broken `note.audioFile` references, oversized files (>25 MB Groq limit), `topic.json` drift. Writes a snapshot to `data/_meta/health-report.json`. |
+
+### Where output lives
+
+- **Transcripts** -- `data/{topicId}/lessons/{lessonId}/notes/audio/{noteId}.transcript.json`, alongside each audio file. The existing Note JSON is not modified.
+- **Idempotency manifest** -- `data/_meta/state.json`. Tracks `path|size|mtime` of each input so re-runs skip completed work.
+- **Health report** -- `data/_meta/health-report.json` (overwritten on each `health-check` run).
+
+### Adding a new step
+
+One file in `lib/pipeline/steps/`, one import line in `lib/pipeline/steps/index.ts`. Implement `plan(scope)` and `run(scope, opts)` per the contract in `lib/pipeline/types.ts`. The web UI and CLI pick it up automatically.
+
 ## Future Enhancements
 
-- [ ] AI-powered chatbot for questions
+- [ ] AI-powered chatbot for questions (RAG over transcripts + lessons)
 - [ ] Spaced repetition system
 - [ ] Audio lessons (TTS)
 - [ ] News aggregation
 - [ ] Cloud sync for progress
 - [ ] Mobile app (React Native)
+- [ ] More pipeline steps: `ingest-url`, `compile-lesson`, `backup-git`, `reindex`
 
 ## License
 

@@ -33,13 +33,40 @@ export interface Lesson {
 
 export interface LessonSection {
   id: string;
-  type: 'content' | 'code' | 'exercise' | 'video' | 'markdown' | 'file' | 'image';
+  type: 'content' | 'code' | 'exercise' | 'video' | 'markdown' | 'file' | 'image' | 'audio';
   title: string;
   content: string;
   codeLanguage?: string;
   videoUrl?: string;
   filePath?: string; // Path to media file relative to topic folder
-  fileType?: 'video' | 'markdown' | 'image' | 'text' | 'other'; // Type of file for rendering
+  fileType?: 'video' | 'markdown' | 'image' | 'text' | 'audio' | 'other'; // Type of file for rendering
+  audioPath?: string; // Path to cached narration MP3 relative to topic folder
+  audioDuration?: number; // Estimated narration length in seconds
+  audioSource?: 'tts' | 'upload' | 'voice-note'; // Where the audio came from
+}
+
+// A spoken chapter in a lesson's generated narration.
+export interface LessonAudioChapter {
+  sectionId: string;
+  title: string;
+  file: string; // Path relative to the topic folder, e.g. "lessons/intro/audio/s1.mp3"
+  start: number; // Offset (seconds) within the full narration
+  duration: number; // Estimated chapter length in seconds
+  charCount: number;
+}
+
+// Sidecar describing a lesson's generated narration (audio/manifest.json).
+export interface LessonAudioManifest {
+  lessonId: string;
+  voice: string;
+  model: string;
+  provider: string;
+  format: string;
+  fullFile: string; // Path relative to the topic folder for the stitched narration
+  duration: number; // Estimated total narration length in seconds
+  chapters: LessonAudioChapter[];
+  textHash: string; // Hash of the source text, used for idempotent regeneration
+  generatedAt: string;
 }
 
 export interface QuizQuestion {
@@ -98,4 +125,12 @@ export interface Note {
 export interface NotesIndex {
   notes: string[]; // Array of note IDs
   lastUpdated: string;
+}
+
+// One timestamped span of a transcript (from Whisper verbose_json output).
+export interface TranscriptSegment {
+  id: number;
+  start: number;
+  end: number;
+  text: string;
 }
